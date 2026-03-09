@@ -1,0 +1,59 @@
+[versions]
+kotlin-inject = "0.9.0"
+anvil = "0.1.7"
+kache = "2.1.1"
+app-platform = "0.0.10-SNAPSHOT"
+kotlin = "2.3.20-RC2"
+sphereon-idk = "0.14.0-SNAPSHOT"
+kotlinx-coroutines = "1.10.1"
+kotlin-logging = "7.0.3"
+mockk = "1.13.14"
+
+[libraries]
+kotlin-inject-compiler-ksp = { module = "me.tatarka.inject:kotlin-inject-compiler-ksp", version.ref = "kotlin-inject" }
+kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime", version.ref = "kotlin-inject" }
+kotlin-inject-runtime-kmp = { module = "me.tatarka.inject:kotlin-inject-runtime-kmp", version.ref = "kotlin-inject" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+anvil-runtime = { module = "software.amazon.lastmile.kotlin.inject.anvil:runtime", version.ref = "anvil" }
+anvil-runtime-optional = { module = "software.amazon.lastmile.kotlin.inject.anvil:runtime-optional", version.ref = "anvil" }
+anvil-compiler-ksp = { module = "software.amazon.lastmile.kotlin.inject.anvil:compiler", version.ref = "anvil" }
+
+amz-kotlin-inject-public = { module = "software.amazon.app.platform:kotlin-inject-public", version.ref = "app-platform" }
+amz-kotlin-inject-impl = { module = "software.amazon.app.platform:kotlin-inject-impl", version.ref = "app-platform" }
+amz-kotlin-scope-public = { module = "software.amazon.app.platform:scope-public", version.ref = "app-platform" }
+amz-kotlin-inject-contribute-public = { module = "software.amazon.app.platform:kotlin-inject-contribute-public", version.ref = "app-platform" }
+amz-di-common-public = { module = "software.amazon.app.platform:di-common-public", version.ref = "app-platform" }
+amz-kotlin-inject-contribute-code-generators = { module = "software.amazon.app.platform:kotlin-inject-contribute-impl-code-generators", version.ref = "app-platform" }
+
+sphereon-core-api-public = { module = "com.sphereon.idk:lib-core-api-public", version.ref = "sphereon-idk" }
+sphereon-core-api-default = { module = "com.sphereon.idk:lib-core-api-default", version.ref = "sphereon-idk" }
+sphereon-core-logger-console = { module = "com.sphereon.idk:lib-core-loggers-console-logger", version.ref = "sphereon-idk" }
+sphereon-ktor-httpclient = { module = "com.sphereon.idk:lib-http-ktor-http-client", version.ref = "sphereon-idk" }
+sphereon-compat = { module = "com.sphereon.idk:lib-core-compat", version.ref = "sphereon-idk" }
+
+# Auth Bridge
+sphereon-auth-bridge-public = { module = "com.sphereon.idk:lib-openid-oid4vp-auth-bridge-public", version.ref = "sphereon-idk" }
+sphereon-auth-bridge-impl = { module = "com.sphereon.idk:lib-openid-oid4vp-auth-bridge-impl", version.ref = "sphereon-idk" }
+
+# OAuth2 Server Authorization
+sphereon-oauth2-server-authorization-public = { module = "com.sphereon.idk:lib-oauth2-server-authorization-public", version.ref = "sphereon-idk" }
+sphereon-oauth2-server-authorization-impl = { module = "com.sphereon.idk:lib-oauth2-server-authorization-impl", version.ref = "sphereon-idk" }
+
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlin-logging-jvm = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[bundles]
+kotlin-inject = [
+    "amz-kotlin-inject-public",
+    "amz-kotlin-inject-contribute-public",
+    "amz-di-common-public",
+    "anvil-runtime",
+    "anvil-runtime-optional",
+    "kotlin-inject-runtime-kmp",
+    "amz-kotlin-scope-public"
+]
+
+[plugins]

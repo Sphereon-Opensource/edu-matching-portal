@@ -1,0 +1,4 @@
+[submodule "idk"]
+	path = idk
+	url = https://github.com/Sphereon-Opensource/Identity-Development-Kit.git
+	branch = develop
