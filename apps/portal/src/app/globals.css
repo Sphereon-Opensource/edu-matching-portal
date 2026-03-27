@@ -1,0 +1,53 @@
+:root {
+  /* Font family — Poppins (same as web-wallet) */
+  --font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'SF Mono', 'Consolas', 'Liberation Mono', monospace;
+
+  /* Layout */
+  --sidebar-width: 236px;
+  --header-height: 48px;
+
+  /* Spacing (portal shorthand — maps to M3 4px grid) */
+  --spacing-0: 0;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-overlay: 400;
+  --z-tooltip: 500;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-family);
+  background-color: var(--color-background);
+  color: var(--color-onSurface);
+  transition:
+    background-color var(--motion-themeTransition-duration) var(--motion-themeTransition-easing),
+    color var(--motion-themeTransition-duration) var(--motion-themeTransition-easing);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

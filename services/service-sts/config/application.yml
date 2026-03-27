@@ -1,0 +1,233 @@
+sphereon:
+  app:
+    # ── CORS ────────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins. When empty, falls back to
+    # FRONTEND_URL env var. When neither is set, all origins are allowed.
+    cors:
+      allowed-origins: ${env:FRONTEND_URL:}
+
+    # ── Authorization Server ─────────────────────────────────────────────
+    oauth2:
+      servers:
+        default-server: primary
+        primary:
+          mode: HOSTED
+          issuer: ${env:STS_ISSUER_URL:http://localhost:8092}
+          base-url: ${env:STS_BASE_URL:http://localhost:8092}
+          # PoC: 1 hour. Production: 900 (15 minutes) per architecture §6.2
+          access-token-lifetime-seconds: 3600
+          refresh-token-lifetime-seconds: 86400
+          authorization-code-lifetime-seconds: 600
+          token-format: JWT
+          refresh-token-rotation: true
+          pkce: REQUIRED
+          # PoC: DISABLED. Production: REQUIRED per architecture §6.2 (DPoP, RFC 9449)
+          dpop: DISABLED
+          token-exchange: SUPPORTED
+          introspection: SUPPORTED
+          revocation: SUPPORTED
+          oidc: SUPPORTED
+          id-token-lifetime-seconds: 3600
+          clients:
+            - client-id: portal
+              client-secret: dev-client-secret
+              redirect-uris: http://localhost:3000/api/auth/callback/sts,http://localhost:3000/api/auth/callback/sts-wallet
+              scopes: openid,profile,email
+              grant-types: authorization_code,refresh_token
+              pkce-required: true
+
+    # ── KMS (Key Management Service) ─────────────────────────────────────
+    kms:
+      providers:
+        software:
+          type: software
+          id: software
+          enabled: true
+          keystore:
+            type: memory
+            id: sts-keystore
+            key-visibility: private
+
+    # ── Upstream Federation (OIDC RP — Multi-Provider) ───────────────────
+    federation:
+      providers:
+        names: surf,keycloak
+        surf:
+          id: surf
+          name: "eduID (SURFconext)"
+          issuer-url: ${env:FEDERATION_ISSUER_URL:https://connect.test.surfconext.nl}
+          client-id: ${env:FEDERATION_CLIENT_ID:kw1c-surf.demo.sphereon.com}
+          client-secret: ${env:FEDERATION_CLIENT_SECRET:}
+          scopes: openid,profile,email
+          identifier-claim-name: sub
+          enabled: true
+          state-mode: jwt
+          authorization-endpoint-override: ${env:FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE:}
+        keycloak:
+          id: keycloak
+          name: "Keycloak (local)"
+          issuer-url: ${env:KEYCLOAK_ISSUER_URL:http://localhost:8083/realms/portal}
+          client-id: portal
+          client-secret: ${env:KEYCLOAK_CLIENT_SECRET:}
+          scopes: openid,profile,email
+          identifier-claim-name: email
+          enabled: ${env:KEYCLOAK_ENABLED:true}
+          state-mode: jwt
+          authorization-endpoint-override: ${env:KEYCLOAK_AUTHORIZATION_ENDPOINT_OVERRIDE:}
+          token-endpoint-override: ${env:KEYCLOAK_TOKEN_ENDPOINT_OVERRIDE:}
+          userinfo-endpoint-override: ${env:KEYCLOAK_USERINFO_ENDPOINT_OVERRIDE:}
+
+    # ── Reconciliation (IDV via STS) ─────────────────────────────────────
+    reconciliation:
+      frontend-url: ${env:FRONTEND_URL:http://localhost:3000}
+
+    # ── Auth Bridge (Wallet OID4VP flow) ─────────────────────────────────
+    oid4vp:
+      auth-bridge:
+        base-url: ${env:AUTH_BRIDGE_BASE_URL:http://localhost:8090}
+        default-query-id: portal-eduid-vc
+        session-ttl-seconds: 300
+        require-reconciliation: true
+        auto-create-user: false
+        user-identifier-claim-path: sub
+        universal-api:
+          base-url: ${env:UNIVERSAL_OID4VP_URL:http://localhost:8080/oid4vp}
+
+    # ── Canonical Attribute Rules (derived mappings for federation) ───────
+    identity:
+      reconciliation:
+        rule-version: "2026-03-24"
+        attribute-rules:
+          # Subject identifier (must survive projection for identifierClaimName)
+          - canonical-name: sub
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+            source-aliases:
+              surf: eduperson_principal_name
+          # Core identity (OIDC authoritative, wallet provides too)
+          - canonical-name: given_name
+            merge-mode: OIDC_WINS
+            required: true
+            persist: true
+            project: true
+          - canonical-name: family_name
+            merge-mode: OIDC_WINS
+            required: true
+            persist: true
+            project: true
+          - canonical-name: email
+            merge-mode: OIDC_WINS
+            required: true
+            persist: true
+            project: true
+          - canonical-name: name
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+          # eduID — institution-specific identifier from SURFconext.
+          # Currently same value as sub (both map from eduid), but kept
+          # as a separate claim so sub mapping can change independently.
+          - canonical-name: eduid
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+            source-aliases:
+              surf: eduid
+          # Upstream federated subject (pairwise sub from the upstream IdP)
+          - canonical-name: federated_subject
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+            source-aliases:
+              surf: sub
+              keycloak: sub
+          - canonical-name: eduid_id1
+            merge-mode: OIDC_WINS
+            persist: true
+            source-aliases:
+              surf: eduid
+          # Institution / organization
+          - canonical-name: institution_id
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+            source-aliases:
+              surf: schac_home_organization
+          - canonical-name: schac_home_organization_type
+            merge-mode: OIDC_ONLY
+            persist: true
+          - canonical-name: ou
+            merge-mode: OIDC_ONLY
+            persist: true
+          # Affiliation & assurance
+          - canonical-name: eduperson_affiliation
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+          - canonical-name: eduperson_scoped_affiliation
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+          - canonical-name: eduperson_assurance
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+          # Role flags (wallet only)
+          - canonical-name: is_employee
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_staff
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_faculty
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_affiliate
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_library_walk_in
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_member
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_alum
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          - canonical-name: is_student
+            merge-mode: WALLET_ONLY
+            persist: true
+            project: true
+          # OIDC-only SURFconext claims
+          - canonical-name: email_verified
+            merge-mode: OIDC_ONLY
+            persist: true
+          - canonical-name: eduperson_principal_name
+            merge-mode: OIDC_WINS
+            project: true
+          - canonical-name: eduperson_entitlement
+            merge-mode: OIDC_ONLY
+            persist: true
+          - canonical-name: schac_personal_unique_code
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+          - canonical-name: uids
+            merge-mode: OIDC_ONLY
+            persist: true
+          - canonical-name: eduperson_orcid
+            merge-mode: OIDC_ONLY
+            persist: true
+          # Wallet-only (holder binding, not persisted)
+          - canonical-name: holder_key
+            merge-mode: WALLET_ONLY
+          - canonical-name: holder_did
+            merge-mode: WALLET_ONLY

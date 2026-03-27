@@ -255,6 +255,17 @@ develocity {
 }
 
 // =====================
+// Portal Libraries
+// =====================
+includeProject("blobstore-camel-core", "libs/blobstore-camel-core")
+includeProject("blobstore-camel-s3", "libs/blobstore-camel-s3")
+includeProject("blobstore-camel-ftp", "libs/blobstore-camel-ftp")
+includeProject("blobstore-camel-azure", "libs/blobstore-camel-azure")
+includeProject("blobstore-camel-gcs", "libs/blobstore-camel-gcs")
+
+// =====================
 // Portal Services
 // =====================
-includeProject("auth-reconciliation", "services/auth-reconciliation")
+includeProject("service-sts", "services/service-sts")
+includeProject("service-auth-bridge", "services/service-auth-bridge")
+includeProject("service-blobstore-camel", "services/service-blobstore-camel")

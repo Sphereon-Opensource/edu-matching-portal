@@ -1,0 +1,71 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+.qrWrapper {
+  padding: var(--spacing-lg);
+  background: #ffffff;
+  border-radius: var(--shape-cornerMedium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instructions {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  max-width: 320px;
+}
+
+.openWalletBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--shape-cornerSmall);
+  background: var(--palette-brand-600);
+  color: var(--palette-brand-50);
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+  max-width: 280px;
+}
+
+.openWalletBtn:hover {
+  background: var(--palette-brand-700);
+}
+
+.status {
+  font-size: 0.85rem;
+  color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.errorText {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-error, #d32f2f);
+  max-width: 320px;
+}
+
+/* On small screens, hide the QR code — same-device button is primary */
+@media (max-width: 640px) {
+  .qrWrapper {
+    display: none;
+  }
+
+  .instructions {
+    display: none;
+  }
+}

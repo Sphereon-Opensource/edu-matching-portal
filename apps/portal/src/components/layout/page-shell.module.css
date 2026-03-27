@@ -1,0 +1,6 @@
+.shell {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--header-height);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  min-height: calc(100vh - var(--header-height));
+}

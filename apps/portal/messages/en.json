@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appDescription": "Identity Portal",
+    "poweredBy": "Sphereon",
+    "tryAgain": "Try again",
+    "back": "Back",
+    "goHome": "Go home",
+    "or": "or"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "notFoundTitle": "404 - Page Not Found",
+    "notFoundDescription": "The page you are looking for does not exist."
+  },
+  "nav": {
+    "holder": "Holder",
+    "credentials": "Credentials",
+    "verifier": "Verifier",
+    "sessions": "Sessions",
+    "issuer": "Issuer",
+    "documents": "Documents",
+    "profile": "Profile",
+    "admin": "Admin",
+    "logout": "Sign out"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
+  "login": {
+    "title": "Sign in",
+    "description": "Choose your preferred authentication method.",
+    "federated": "Login with eduID",
+    "loginWith": "Login with {provider}",
+    "wallet": "Login with Wallet",
+    "tabFederation": "Institutional Account",
+    "tabWallet": "Wallet",
+    "federationHint": "Sign in with your institutional account",
+    "walletHint": "Scan a QR code with your wallet app",
+    "walletScan": "Scan QR Code",
+    "stsUnavailable": "The authentication service (STS) is currently unavailable. Please try again later or contact support.",
+    "authBridgeUnavailable": "The wallet service is currently unavailable. Please try again later or contact support.",
+    "tabReconciliation": "Account Linking",
+    "tabCompleting": "Completing..."
+  },
+  "wallet": {
+    "qrInstructions": "Scan this QR code with your wallet app to authenticate.",
+    "openWallet": "Open in Wallet",
+    "sessionExpired": "The session has expired. Please try again.",
+    "waitingForResponse": "Waiting for wallet response...",
+    "startingLogin": "Starting wallet login...",
+    "completingAuth": "Completing authentication..."
+  },
+  "idv": {
+    "title": "First-time wallet login",
+    "description": "This is the first time you are logging in with this wallet. To verify your identity, please log in once using one of the options below.",
+    "linkButton": "Log in with institutional account"
+  },
+  "holder": {
+    "title": "Holder Dashboard",
+    "credentialsTitle": "Your Credentials",
+    "credentialsEmpty": "No credentials yet. Your verified credentials will appear here.",
+    "credentialStoreTitle": "Credential Store",
+    "credentialStoreDescription": "Manage your verifiable credentials here."
+  },
+  "verifier": {
+    "title": "Verifier",
+    "requestsTitle": "Verification Requests",
+    "requestsDescription": "Create and manage verification requests.",
+    "sessionsTitle": "Verification Sessions",
+    "activeSessionsTitle": "Active Sessions",
+    "activeSessionsEmpty": "No active verification sessions.",
+    "sessionDetailTitle": "Session Detail",
+    "sessionInfoTitle": "Session Information",
+    "sessionInfoDescription": "Session details will appear here."
+  },
+  "issuer": {
+    "title": "Issuer",
+    "issuanceTitle": "Issuance",
+    "issuanceDescription": "Issue verifiable credentials.",
+    "issuedTitle": "Issued Credentials",
+    "templatesTitle": "Credential Templates",
+    "templatesDescription": "Manage credential templates and issuance."
+  },
+  "documents": {
+    "title": "Documents",
+    "description": "Browse, upload, and manage your documents.",
+    "serviceUnavailable": "The document service is currently unavailable. Please try again later.",
+    "allFiles": "All files",
+    "colName": "Name",
+    "colSize": "Size",
+    "colModified": "Modified",
+    "colCreated": "Created",
+    "colType": "Type",
+    "upload": "Upload",
+    "noFiles": "No files found",
+    "loading": "Loading...",
+    "loadMore": "Load more",
+    "delete": "Delete",
+    "cancel": "Cancel"
+  },
+  "profile": {
+    "title": "Profile",
+    "userInfoTitle": "Account",
+    "name": "Name",
+    "email": "Email",
+    "institution": "Institution",
+    "eduid": "eduID",
+    "principalName": "Principal name",
+    "authMethod": "Login method",
+    "authMethodFederated": "Institutional account (eduID)",
+    "authMethodWallet": "Wallet",
+    "assurance": "Assurance",
+    "acr": "Authentication context",
+    "amr": "Authentication methods",
+    "sessionExpires": "Session expires",
+    "walletsTitle": "Linked Wallets",
+    "walletsDescription": "Wallets that are linked to your account. Each wallet can be used to log in without needing to authenticate via your institution again.",
+    "walletsEmpty": "No wallets linked yet. Log in with a wallet to link it to your account.",
+    "walletLinkedOn": "Linked on",
+    "revokeWallet": "Revoke",
+    "revokeConfirm": "Are you sure you want to revoke this wallet? You will need to re-link it to log in with this device again.",
+    "tokensLink": "View tokens",
+    "tokensTitle": "Token Inspector",
+    "tokensDescription": "Decoded tokens from your current session. Useful for verifying that claims and assurance metadata are correct.",
+    "sessionInfo": "Session",
+    "idToken": "ID Token",
+    "accessToken": "Access Token",
+    "showRaw": "Show raw token",
+    "hideRaw": "Hide raw token",
+    "notPresent": "Not present",
+    "decodedPayload": "Decoded payload"
+  },
+  "admin": {
+    "title": "Administration",
+    "overviewTitle": "System Overview",
+    "overviewDescription": "Portal administration and configuration.",
+    "usersTitle": "User Management",
+    "usersCardTitle": "Users",
+    "usersDescription": "Manage portal users and roles.",
+    "settingsTitle": "Settings",
+    "settingsCardTitle": "Portal Settings",
+    "settingsDescription": "Configure portal settings."
+  }
+}

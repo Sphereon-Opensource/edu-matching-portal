@@ -1,0 +1,46 @@
+{
+  "name": "@sphereon/portal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:smoke": "playwright test e2e/smoke.spec.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@sphereon/theme-react": "file:../../../VDX-infra/vdx/edk/idk/lib/conf/theme/react/sphereon-theme-react-0.1.0.tgz",
+    "@sphereon/ui-react": "file:../../../VDX-infra/vdx/edk/idk/lib/ui/react/sphereon-ui-react-0.1.0.tgz",
+    "@tanstack/react-query": "^5.60.0",
+    "clsx": "^2.1.0",
+    "next": "^15.3.0",
+    "next-auth": "5.0.0-beta.30",
+    "next-intl": "^4.8.3",
+    "qrcode.react": "^4.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@tanstack/react-query-devtools": "^5.60.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "dotenv": "^16.4.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "prettier": "^3.4.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.1.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "jsdom": "^25.0.0",
+    "vitest": "^2.1.0",
+    "typescript": "^5.7.0"
+  }
+}

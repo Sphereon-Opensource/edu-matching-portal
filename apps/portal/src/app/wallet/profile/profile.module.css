@@ -1,0 +1,121 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.infoTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.infoTable td {
+  padding: var(--spacing-sm) 0;
+  vertical-align: top;
+}
+
+.infoTable td:first-child {
+  color: var(--color-secondary);
+  font-size: 0.85rem;
+  width: 160px;
+  padding-right: var(--spacing-md);
+}
+
+.infoTable td:last-child {
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--shape-cornerSmall);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--color-surfaceVariant);
+  color: var(--color-onSurface);
+}
+
+.badgePrimary {
+  composes: badge;
+  background: var(--palette-brand-600);
+  color: var(--palette-brand-50);
+}
+
+.walletList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.walletItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--shape-cornerSmall);
+  background: var(--color-surfaceVariant);
+}
+
+.walletInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.walletId {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.walletDate {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+.revokeButton {
+  background: none;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--shape-cornerSmall);
+  padding: 4px var(--spacing-sm);
+  font-size: 0.8rem;
+  color: var(--color-onSurface);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.revokeButton:hover {
+  background: var(--color-surface);
+}
+
+.emptyState {
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+.tokenLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-top: var(--spacing-sm);
+}
+
+.tokenLink:hover {
+  text-decoration: underline;
+}

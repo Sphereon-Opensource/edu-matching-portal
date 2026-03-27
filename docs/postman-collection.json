@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "KW1C External Reconciliation API",
+    "description": "Postman collection for the KW1C External Reconciliation API.\n\n**Setup:**\n1. Set `clientId` and `clientSecret` in collection variables\n2. Set `tokenUrl` to your OAuth2 token endpoint\n3. Click \"Get New Access Token\" in the collection Authorization tab\n4. Run \"Lookup Identity\" first — it auto-saves the `internalIdentityId`\n\n**Authentication:**\nOAuth2 client_credentials grant with `reconciliation:read` scope.\nConfigured at collection level — all requests inherit it automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      { "key": "grant_type", "value": "client_credentials", "type": "string" },
+      { "key": "tokenUrl", "value": "{{tokenUrl}}", "type": "string" },
+      { "key": "clientId", "value": "{{clientId}}", "type": "string" },
+      { "key": "clientSecret", "value": "{{clientSecret}}", "type": "string" },
+      { "key": "scope", "value": "reconciliation:read", "type": "string" },
+      { "key": "addTokenTo", "value": "header", "type": "string" },
+      { "key": "tokenName", "value": "access_token", "type": "string" },
+      { "key": "headerPrefix", "value": "Bearer", "type": "string" },
+      { "key": "accessTokenUrl", "value": "{{tokenUrl}}", "type": "string" },
+      { "key": "client_authentication", "value": "body", "type": "string" }
+    ]
+  },
+  "variable": [
+    {
+      "key": "authBridgeUrl",
+      "value": "http://localhost:8090",
+      "description": "Auth Bridge base URL"
+    },
+    {
+      "key": "clientId",
+      "value": "krs-system",
+      "description": "OAuth2 client ID (must match external-api.clients config)"
+    },
+    {
+      "key": "clientSecret",
+      "value": "",
+      "description": "OAuth2 client secret"
+    },
+    {
+      "key": "tokenUrl",
+      "value": "http://localhost:8083/realms/portal/protocol/openid-connect/token",
+      "description": "OAuth2 token endpoint (must match external-api.jwt.issuer)"
+    },
+    {
+      "key": "internalIdentityId",
+      "value": "",
+      "description": "Internal identity ID (auto-set by Lookup)"
+    },
+    {
+      "key": "identifierHash",
+      "value": "",
+      "description": "HMAC-hashed identifier for lookup"
+    },
+    {
+      "key": "matchId",
+      "value": "",
+      "description": "Identity match ID (for device revocation)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/health"
+          }
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/ready"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity Lookup",
+      "description": "FR-API-01, FR-API-02: Look up reconciled identities.\nSupported identifier types: KEY, DID, EMAIL, SUBJECT_ID, CLAIM_TUPLE.\nUse 'identifier' for plaintext (server hashes with Key B) or 'identifierHash' for pre-hashed values.",
+      "item": [
+        {
+          "name": "Lookup by eduid (plaintext)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.found && json.internalIdentityId) {",
+                  "        pm.collectionVariables.set('internalIdentityId', json.internalIdentityId);",
+                  "        console.log('Found identity: ' + json.internalIdentityId);",
+                  "    } else {",
+                  "        console.log('Identity not found');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/lookup",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"urn:collab:person:surfnet.nl:student123\",\n  \"identifierType\": \"SUBJECT_ID\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Lookup by Holder Key Hash (TC-EXT-01)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.found && json.internalIdentityId) {",
+                  "        pm.collectionVariables.set('internalIdentityId', json.internalIdentityId);",
+                  "        console.log('Found identity: ' + json.internalIdentityId);",
+                  "    } else {",
+                  "        console.log('Identity not found');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/lookup",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifierHash\": \"{{identifierHash}}\",\n  \"identifierType\": \"KEY\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Lookup Unknown Identity (TC-EXT-02)",
+          "request": {
+            "method": "POST",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/lookup",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifierHash\": \"nonexistent-hash-value\",\n  \"identifierType\": \"KEY\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity Data",
+      "description": "FR-API-03, FR-API-04: Retrieve projected claims and auxiliary data.",
+      "item": [
+        {
+          "name": "Get Full Identity (TC-EXT-03)",
+          "request": {
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}"
+          }
+        },
+        {
+          "name": "Get Claims Only (TC-EXT-04)",
+          "request": {
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}/claims"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auxiliary Data",
+      "description": "FR-API-04, FR-API-05: Read and write supplementary data (enrollment, grades, etc.).",
+      "item": [
+        {
+          "name": "Get All Auxiliary Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}/auxiliary"
+          }
+        },
+        {
+          "name": "Get Enrollment Data (TC-EXT-06)",
+          "request": {
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}/auxiliary/enrollment"
+          }
+        },
+        {
+          "name": "Write Enrollment Data (TC-EXT-05)",
+          "request": {
+            "method": "PUT",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}/auxiliary/enrollment",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": {\n    \"enrollment_status\": \"active\",\n    \"programme_code\": \"ICT-SE\",\n    \"cohort\": \"2024\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Auxiliary Category",
+          "request": {
+            "method": "DELETE",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}/auxiliary/enrollment"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Devices (Wallet Management)",
+      "description": "FR 7.1: View and manage linked wallets (holder keys).",
+      "item": [
+        {
+          "name": "List Linked Devices",
+          "request": {
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/devices/{{internalIdentityId}}"
+          }
+        },
+        {
+          "name": "Revoke Device",
+          "request": {
+            "method": "DELETE",
+            "url": "{{authBridgeUrl}}/api/external/v1/devices/{{internalIdentityId}}/{{matchId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth & Error Scenarios",
+      "description": "TC-EXT-07, TC-EXT-08: Verify auth enforcement.",
+      "item": [
+        {
+          "name": "Unauthorized — No Token (TC-EXT-07)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}"
+          }
+        },
+        {
+          "name": "Forbidden — Invalid Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "invalid-token-value", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GDPR",
+      "description": "FR-API-06: Permanent identity deletion.",
+      "item": [
+        {
+          "name": "GDPR Erasure (TC-EXT-09)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{authBridgeUrl}}/api/external/v1/reconciliation/{{internalIdentityId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

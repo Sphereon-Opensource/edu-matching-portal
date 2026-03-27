@@ -1,0 +1,311 @@
+{
+  "methods": [
+    {
+      "_type": "com.sphereon.identity.idv.model.OidcMethodDefinition",
+      "id": { "value": "surf-oidc" },
+      "scope": "APP",
+      "enabled": true,
+      "display": {
+        "name": "SURFconext",
+        "description": "Authenticate via SURFconext federated OIDC to verify institutional identity"
+      },
+      "assurance": {
+        "maxAssurance": "substantial",
+        "maxAal": "aal2",
+        "amrCapabilities": [
+          { "value": "mfa" },
+          { "value": "swk" }
+        ]
+      },
+      "output": {
+        "producedIdentifierTypes": [
+          "email",
+          "federated_subject"
+        ],
+        "producedClaims": [
+          { "value": "federated_subject" },
+          { "value": "eduid_id1" },
+          { "value": "email" },
+          { "value": "email_verified" },
+          { "value": "given_name" },
+          { "value": "family_name" },
+          { "value": "name" },
+          { "value": "eduperson_affiliation" },
+          { "value": "eduperson_scoped_affiliation" },
+          { "value": "eduperson_assurance" },
+          { "value": "eduperson_principal_name" },
+          { "value": "eduperson_entitlement" },
+          { "value": "schac_home_organization" },
+          { "value": "schac_home_organization_type" },
+          { "value": "schac_personal_unique_code" },
+          { "value": "ou" },
+          { "value": "uids" },
+          { "value": "eduperson_orcid" }
+        ]
+      },
+      "compliance": {
+        "regulatoryFrameworks": [],
+        "requiresExplicitConsent": false
+      },
+      "discoveryUrl": "${SURF_OIDC_ISSUER_URL}/.well-known/openid-configuration",
+      "clientIdRef": {
+        "key": "identity.reconciliation.providers.surf.client-id",
+        "required": true
+      },
+      "clientSecretRef": {
+        "path": "identity.reconciliation.providers.surf.client-secret"
+      },
+      "scopes": ["openid", "profile", "email"],
+      "claimMappings": [
+        {
+          "sourceClaim": { "value": "sub" },
+          "targetClaim": { "value": "federated_subject" },
+          "identifierType": "federated_subject",
+          "required": true
+        },
+        {
+          "sourceClaim": { "value": "eduid" },
+          "targetClaim": { "value": "eduid_id1" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "email" },
+          "targetClaim": { "value": "email" },
+          "identifierType": "email",
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "email_verified" },
+          "targetClaim": { "value": "email_verified" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "given_name" },
+          "targetClaim": { "value": "given_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "family_name" },
+          "targetClaim": { "value": "family_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "name" },
+          "targetClaim": { "value": "name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_affiliation" },
+          "targetClaim": { "value": "eduperson_affiliation" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_scoped_affiliation" },
+          "targetClaim": { "value": "eduperson_scoped_affiliation" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_assurance" },
+          "targetClaim": { "value": "eduperson_assurance" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_principal_name" },
+          "targetClaim": { "value": "eduperson_principal_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_entitlement" },
+          "targetClaim": { "value": "eduperson_entitlement" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_home_organization" },
+          "targetClaim": { "value": "schac_home_organization" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_home_organization_type" },
+          "targetClaim": { "value": "schac_home_organization_type" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_personal_unique_code" },
+          "targetClaim": { "value": "schac_personal_unique_code" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "ou" },
+          "targetClaim": { "value": "ou" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "uids" },
+          "targetClaim": { "value": "uids" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_orcid" },
+          "targetClaim": { "value": "eduperson_orcid" },
+          "required": false
+        }
+      ],
+      "subjectBinding": {
+        "source": {
+          "_type": "com.sphereon.identity.idv.model.ContextClaim",
+          "claimPath": { "value": "sub" }
+        },
+        "target": {
+          "claimPath": { "value": "federated_subject" }
+        },
+        "required": true
+      },
+      "requiredClaims": [
+        { "value": "federated_subject" }
+      ],
+      "userInfoEnabled": true,
+      "userInfoClaimMappings": [
+        {
+          "sourceClaim": { "value": "given_name" },
+          "targetClaim": { "value": "given_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "family_name" },
+          "targetClaim": { "value": "family_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "name" },
+          "targetClaim": { "value": "name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "email" },
+          "targetClaim": { "value": "email" },
+          "identifierType": "email",
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "email_verified" },
+          "targetClaim": { "value": "email_verified" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_affiliation" },
+          "targetClaim": { "value": "eduperson_affiliation" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_scoped_affiliation" },
+          "targetClaim": { "value": "eduperson_scoped_affiliation" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_assurance" },
+          "targetClaim": { "value": "eduperson_assurance" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_principal_name" },
+          "targetClaim": { "value": "eduperson_principal_name" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_entitlement" },
+          "targetClaim": { "value": "eduperson_entitlement" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_home_organization" },
+          "targetClaim": { "value": "schac_home_organization" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_home_organization_type" },
+          "targetClaim": { "value": "schac_home_organization_type" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "schac_personal_unique_code" },
+          "targetClaim": { "value": "schac_personal_unique_code" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "ou" },
+          "targetClaim": { "value": "ou" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "uids" },
+          "targetClaim": { "value": "uids" },
+          "required": false
+        },
+        {
+          "sourceClaim": { "value": "eduperson_orcid" },
+          "targetClaim": { "value": "eduperson_orcid" },
+          "required": false
+        }
+      ]
+    }
+  ],
+  "useCases": [
+    {
+      "id": { "value": "kw1c-wallet-login" },
+      "tenantId": "default",
+      "name": "KW1C Wallet Login",
+      "description": "Identity verification for KW1C wallet-based student login. Presents a wallet credential, then reconciles identity via SURFconext OIDC if the holder key is unknown.",
+      "enabled": true,
+      "target": {
+        "associationType": "NATURAL_PERSON",
+        "allowExistingIdentity": true,
+        "autoCreateParty": true
+      },
+      "triggers": [
+        {
+          "entryPointType": { "value": "wallet_oid4vp" },
+          "triggerType": { "value": "onboarding" }
+        },
+        {
+          "entryPointType": { "value": "wallet_oid4vp" },
+          "triggerType": { "value": "registration" }
+        }
+      ],
+      "graph": {
+        "_type": "com.sphereon.identity.idv.model.SequenceNode",
+        "nodeId": { "value": "root" },
+        "children": [
+          {
+            "_type": "com.sphereon.identity.idv.model.MethodNode",
+            "nodeId": { "value": "surf-oidc-node" },
+            "methodId": { "value": "surf-oidc" }
+          }
+        ]
+      },
+      "policy": {
+        "minimumAssurance": "substantial",
+        "minimumAal": "aal2",
+        "sessionTtlSeconds": 600,
+        "allowPartialCompletion": false
+      },
+      "materializations": [
+        {
+          "_type": "com.sphereon.identity.idv.model.CreateIdentityMatchMaterialization",
+          "hashAlgorithm": "HS256"
+        },
+        {
+          "_type": "com.sphereon.identity.idv.model.CreateIdentifiersMaterialization",
+          "identifierFilter": [
+            "email",
+            "federated_subject"
+          ]
+        },
+        {
+          "_type": "com.sphereon.identity.idv.model.MarkVerifiedMaterialization"
+        }
+      ],
+      "userMessage": "Please verify your identity via your institution to complete registration.",
+      "completionMessage": "Identity verified successfully. Your wallet is now linked to your institutional account."
+    }
+  ]
+}

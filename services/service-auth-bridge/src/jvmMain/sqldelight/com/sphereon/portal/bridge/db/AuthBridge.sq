@@ -1,0 +1,624 @@
+-- Auth Bridge PostgreSQL Schema
+-- Identity matching, link bindings, reconciliation sessions, providers,
+-- and encrypted auxiliary data.
+
+import kotlinx.datetime.Instant;
+
+-- =====================================================================
+-- Identity Matches
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS identity_match (
+    id                    TEXT NOT NULL PRIMARY KEY,
+    tenant_id             TEXT NOT NULL,
+    identifier_hash       TEXT NOT NULL,
+    identifier_type       TEXT NOT NULL,
+    internal_identity_id  TEXT NOT NULL,
+    hash_key_version      TEXT,
+    metadata_json         TEXT,
+    created_at            TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    updated_at            TIMESTAMP WITH TIME ZONE AS Instant,
+    last_used_at          TIMESTAMP WITH TIME ZONE AS Instant,
+    deleted_at            TIMESTAMP WITH TIME ZONE AS Instant,
+    deletion_reason       TEXT,
+    CONSTRAINT uq_match_hash UNIQUE (tenant_id, identifier_hash, identifier_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_match_identity ON identity_match (tenant_id, internal_identity_id);
+
+-- Identity Match Queries
+
+countMatches:
+SELECT COUNT(*)
+FROM identity_match
+WHERE tenant_id = :tenantId;
+
+findMatchByIdentifierHash:
+SELECT *
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND identifier_hash = :identifierHash
+  AND identifier_type = :identifierType
+  AND deleted_at IS NULL;
+
+findMatchById:
+SELECT *
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND id = :matchId
+  AND deleted_at IS NULL;
+
+findMatchesByInternalIdentityId:
+SELECT *
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND internal_identity_id = :internalIdentityId
+  AND deleted_at IS NULL;
+
+insertMatch:
+INSERT INTO identity_match(
+    id, tenant_id, identifier_hash, identifier_type, internal_identity_id,
+    hash_key_version, metadata_json, created_at, updated_at, last_used_at
+) VALUES (
+    :id, :tenantId, :identifierHash, :identifierType, :internalIdentityId,
+    :hashKeyVersion, :metadataJson, :createdAt, :updatedAt, :lastUsedAt
+);
+
+updateMatch:
+UPDATE identity_match
+SET identifier_hash = :identifierHash,
+    identifier_type = :identifierType,
+    internal_identity_id = :internalIdentityId,
+    hash_key_version = :hashKeyVersion,
+    metadata_json = :metadataJson,
+    updated_at = :updatedAt,
+    last_used_at = :lastUsedAt
+WHERE tenant_id = :tenantId
+  AND id = :matchId;
+
+deleteMatch:
+DELETE FROM identity_match
+WHERE tenant_id = :tenantId
+  AND id = :matchId;
+
+-- =====================================================================
+-- Identity Link Bindings
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS identity_link_binding (
+    id                                   TEXT NOT NULL PRIMARY KEY,
+    tenant_id                            TEXT NOT NULL,
+    match_id                             TEXT NOT NULL,
+    holder_identifier_hash               TEXT NOT NULL,
+    holder_hash_key_version              TEXT NOT NULL,
+    institution_identifier_hash          TEXT,
+    institution_hash_key_version         TEXT,
+    encrypted_institution_id             TEXT,
+    encrypted_institution_id_key_version TEXT,
+    persisted_attributes_envelope        TEXT NOT NULL,
+    provider_id                          TEXT NOT NULL,
+    institution_id_label                 TEXT,
+    canonical_schema_version             TEXT,
+    material_profile_version             TEXT,
+    selector_rule_version                TEXT,
+    persisted_attribute_names            TEXT,
+    material_fingerprints                TEXT,
+    assurance_summary                    TEXT,
+    created_at                           TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    updated_at                           TIMESTAMP WITH TIME ZONE AS Instant,
+    last_used_at                         TIMESTAMP WITH TIME ZONE AS Instant,
+    deleted_at                           TIMESTAMP WITH TIME ZONE AS Instant,
+    deletion_reason                      TEXT,
+    reconcile_time                       TIMESTAMP WITH TIME ZONE AS Instant
+);
+
+CREATE INDEX IF NOT EXISTS idx_binding_match ON identity_link_binding (tenant_id, match_id);
+CREATE INDEX IF NOT EXISTS idx_binding_holder ON identity_link_binding (tenant_id, holder_identifier_hash);
+
+-- Identity Link Binding Queries
+
+findBindingsByInstitutionHash:
+SELECT *
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND institution_identifier_hash = :institutionHash
+  AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+findBindingsByInternalIdentityId:
+SELECT ilb.*
+FROM identity_link_binding ilb
+JOIN identity_match im ON ilb.match_id = im.id AND ilb.tenant_id = im.tenant_id
+WHERE ilb.tenant_id = :tenantId
+  AND im.internal_identity_id = :internalIdentityId
+  AND ilb.deleted_at IS NULL
+ORDER BY ilb.created_at DESC;
+
+findBindingByMatchId:
+SELECT *
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND match_id = :matchId
+  AND deleted_at IS NULL;
+
+findBindingByHolderHash:
+SELECT *
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND holder_identifier_hash = :holderHash
+  AND deleted_at IS NULL;
+
+insertBinding:
+INSERT INTO identity_link_binding(
+    id, tenant_id, match_id, holder_identifier_hash, holder_hash_key_version,
+    institution_identifier_hash, institution_hash_key_version,
+    encrypted_institution_id, encrypted_institution_id_key_version,
+    persisted_attributes_envelope, provider_id, institution_id_label,
+    canonical_schema_version, material_profile_version, selector_rule_version,
+    persisted_attribute_names, material_fingerprints, assurance_summary,
+    created_at, updated_at, last_used_at, reconcile_time
+) VALUES (
+    :id, :tenantId, :matchId, :holderIdentifierHash, :holderHashKeyVersion,
+    :institutionIdentifierHash, :institutionHashKeyVersion,
+    :encryptedInstitutionId, :encryptedInstitutionIdKeyVersion,
+    :persistedAttributesEnvelope, :providerId, :institutionIdLabel,
+    :canonicalSchemaVersion, :materialProfileVersion, :selectorRuleVersion,
+    :persistedAttributeNames, :materialFingerprints, :assuranceSummary,
+    :createdAt, :updatedAt, :lastUsedAt, :reconcileTime
+);
+
+updateBinding:
+UPDATE identity_link_binding
+SET match_id = :matchId,
+    holder_identifier_hash = :holderIdentifierHash,
+    holder_hash_key_version = :holderHashKeyVersion,
+    institution_identifier_hash = :institutionIdentifierHash,
+    institution_hash_key_version = :institutionHashKeyVersion,
+    encrypted_institution_id = :encryptedInstitutionId,
+    encrypted_institution_id_key_version = :encryptedInstitutionIdKeyVersion,
+    persisted_attributes_envelope = :persistedAttributesEnvelope,
+    provider_id = :providerId,
+    institution_id_label = :institutionIdLabel,
+    canonical_schema_version = :canonicalSchemaVersion,
+    material_profile_version = :materialProfileVersion,
+    selector_rule_version = :selectorRuleVersion,
+    persisted_attribute_names = :persistedAttributeNames,
+    material_fingerprints = :materialFingerprints,
+    assurance_summary = :assuranceSummary,
+    updated_at = :updatedAt,
+    last_used_at = :lastUsedAt
+WHERE tenant_id = :tenantId
+  AND id = :bindingId;
+
+deleteBinding:
+DELETE FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND id = :bindingId;
+
+findExpiredBindings:
+SELECT *
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND last_used_at IS NOT NULL
+  AND last_used_at <= :inactiveSince;
+
+-- =====================================================================
+-- Reconciliation Sessions
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS reconciliation_session (
+    id                             TEXT NOT NULL PRIMARY KEY,
+    tenant_id                      TEXT NOT NULL,
+    status                         TEXT NOT NULL,
+    identifier_hash                TEXT NOT NULL,
+    identifier_type                TEXT NOT NULL,
+    provider_id                    TEXT NOT NULL,
+    authorization_url              TEXT,
+    state                          TEXT,
+    nonce                          TEXT,
+    code_verifier                  TEXT,
+    redirect_uri                   TEXT,
+    token_endpoint                 TEXT,
+    encrypted_identity             TEXT,
+    encrypted_identity_key_version TEXT,
+    error_message                  TEXT,
+    created_at                     TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    expires_at                     TIMESTAMP WITH TIME ZONE AS Instant NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recon_state ON reconciliation_session (state)
+WHERE state IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_recon_tenant ON reconciliation_session (tenant_id, status);
+
+-- Reconciliation Session Queries
+
+findSessionById:
+SELECT *
+FROM reconciliation_session
+WHERE tenant_id = :tenantId
+  AND id = :sessionId;
+
+findSessionByState:
+SELECT *
+FROM reconciliation_session
+WHERE state = :state;
+
+insertSession:
+INSERT INTO reconciliation_session(
+    id, tenant_id, status, identifier_hash, identifier_type, provider_id,
+    authorization_url, state, nonce, code_verifier, redirect_uri, token_endpoint,
+    encrypted_identity, encrypted_identity_key_version,
+    error_message, created_at, expires_at
+) VALUES (
+    :id, :tenantId, :status, :identifierHash, :identifierType, :providerId,
+    :authorizationUrl, :state, :nonce, :codeVerifier, :redirectUri, :tokenEndpoint,
+    :encryptedIdentity, :encryptedIdentityKeyVersion,
+    :errorMessage, :createdAt, :expiresAt
+);
+
+updateSession:
+UPDATE reconciliation_session
+SET status = :status,
+    authorization_url = :authorizationUrl,
+    state = :state,
+    nonce = :nonce,
+    code_verifier = :codeVerifier,
+    redirect_uri = :redirectUri,
+    token_endpoint = :tokenEndpoint,
+    encrypted_identity = :encryptedIdentity,
+    encrypted_identity_key_version = :encryptedIdentityKeyVersion,
+    error_message = :errorMessage
+WHERE tenant_id = :tenantId
+  AND id = :sessionId;
+
+deleteSession:
+DELETE FROM reconciliation_session
+WHERE tenant_id = :tenantId
+  AND id = :sessionId;
+
+findExpiredSessions:
+SELECT *
+FROM reconciliation_session
+WHERE expires_at <= :cutoff
+  AND status IN ('CREATED', 'REDIRECTED', 'CALLBACK_RECEIVED');
+
+-- =====================================================================
+-- Reconciliation Providers
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS reconciliation_provider (
+    id                       TEXT NOT NULL PRIMARY KEY,
+    name                     TEXT,
+    oidc_client_id           TEXT NOT NULL,
+    identifier_attr_name     TEXT NOT NULL DEFAULT 'sub',
+    enabled                  INTEGER NOT NULL DEFAULT 1,
+    attribute_mappings       TEXT,
+    userinfo_attr_mappings   TEXT,
+    assurance_acr            TEXT,
+    assurance_amr            TEXT
+);
+
+-- Reconciliation Provider Queries
+
+findProviderById:
+SELECT *
+FROM reconciliation_provider
+WHERE id = :providerId;
+
+findAllProviders:
+SELECT *
+FROM reconciliation_provider;
+
+upsertProvider:
+INSERT INTO reconciliation_provider(
+    id, name, oidc_client_id, identifier_attr_name, enabled,
+    attribute_mappings, userinfo_attr_mappings, assurance_acr, assurance_amr
+) VALUES (
+    :id, :name, :oidcClientId, :identifierAttrName, :enabled,
+    :attributeMappings, :userinfoAttrMappings, :assuranceAcr, :assuranceAmr
+)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    oidc_client_id = EXCLUDED.oidc_client_id,
+    identifier_attr_name = EXCLUDED.identifier_attr_name,
+    enabled = EXCLUDED.enabled,
+    attribute_mappings = EXCLUDED.attribute_mappings,
+    userinfo_attr_mappings = EXCLUDED.userinfo_attr_mappings,
+    assurance_acr = EXCLUDED.assurance_acr,
+    assurance_amr = EXCLUDED.assurance_amr;
+
+deleteProvider:
+DELETE FROM reconciliation_provider
+WHERE id = :providerId;
+
+-- =====================================================================
+-- Auxiliary Data (NEW - encrypted at-rest storage)
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS auxiliary_data (
+    id              TEXT NOT NULL PRIMARY KEY,
+    tenant_id       TEXT NOT NULL,
+    identity_id     TEXT NOT NULL,
+    category        TEXT NOT NULL,
+    encrypted_data  TEXT NOT NULL,
+    key_version     TEXT NOT NULL,
+    schema_version  TEXT NOT NULL DEFAULT '1',
+    created_at      TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    updated_at      TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    expires_at      TIMESTAMP WITH TIME ZONE AS Instant,
+    CONSTRAINT uq_aux_identity_category UNIQUE (tenant_id, identity_id, category)
+);
+
+CREATE INDEX IF NOT EXISTS idx_aux_identity ON auxiliary_data (tenant_id, identity_id);
+CREATE INDEX IF NOT EXISTS idx_aux_expires ON auxiliary_data (expires_at) WHERE expires_at IS NOT NULL;
+
+-- Auxiliary Data Queries
+
+findAuxById:
+SELECT *
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND id = :id;
+
+findAuxByIdentityAndCategory:
+SELECT *
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId
+  AND category = :category;
+
+findAuxByIdentity:
+SELECT *
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId;
+
+listAuxCategories:
+SELECT DISTINCT category
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId;
+
+upsertAux:
+INSERT INTO auxiliary_data(
+    id, tenant_id, identity_id, category, encrypted_data, key_version,
+    schema_version, created_at, updated_at, expires_at
+) VALUES (
+    :id, :tenantId, :identityId, :category, :encryptedData, :keyVersion,
+    :schemaVersion, :createdAt, :updatedAt, :expiresAt
+)
+ON CONFLICT (tenant_id, identity_id, category) DO UPDATE SET
+    encrypted_data = EXCLUDED.encrypted_data,
+    key_version = EXCLUDED.key_version,
+    schema_version = EXCLUDED.schema_version,
+    updated_at = EXCLUDED.updated_at,
+    expires_at = EXCLUDED.expires_at;
+
+updateAux:
+UPDATE auxiliary_data
+SET encrypted_data = :encryptedData,
+    key_version = :keyVersion,
+    schema_version = :schemaVersion,
+    updated_at = :updatedAt,
+    expires_at = :expiresAt
+WHERE tenant_id = :tenantId
+  AND id = :id;
+
+deleteAuxByIdentity:
+DELETE FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId;
+
+deleteAuxById:
+DELETE FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND id = :id;
+
+deleteAuxByCategory:
+DELETE FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId
+  AND category = :category;
+
+countAuxByIdentity:
+SELECT COUNT(*)
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND identity_id = :identityId;
+
+findExpiredAux:
+SELECT *
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+  AND expires_at IS NOT NULL
+  AND expires_at <= :cutoff;
+
+-- =====================================================================
+-- Key Migration History
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS key_migration_history (
+    version           INTEGER NOT NULL PRIMARY KEY,
+    operations        TEXT NOT NULL,
+    status            TEXT NOT NULL,
+    records_processed INTEGER NOT NULL DEFAULT 0,
+    records_failed    INTEGER NOT NULL DEFAULT 0,
+    records_skipped   INTEGER NOT NULL DEFAULT 0,
+    records_purged    INTEGER NOT NULL DEFAULT 0,
+    started_at        TIMESTAMP WITH TIME ZONE AS Instant NOT NULL,
+    completed_at      TIMESTAMP WITH TIME ZONE AS Instant,
+    error_message     TEXT,
+    config_snapshot   TEXT
+);
+
+getLastCompletedVersion:
+SELECT COALESCE(MAX(version), 0)
+FROM key_migration_history
+WHERE status = 'COMPLETED';
+
+insertMigrationRecord:
+INSERT INTO key_migration_history(
+    version, operations, status, records_processed, records_failed,
+    records_skipped, records_purged, started_at, completed_at,
+    error_message, config_snapshot
+) VALUES (
+    :version, :operations, :status, :recordsProcessed, :recordsFailed,
+    :recordsSkipped, :recordsPurged, :startedAt, :completedAt,
+    :errorMessage, :configSnapshot
+);
+
+updateMigrationStatus:
+UPDATE key_migration_history
+SET status = :status,
+    records_processed = :recordsProcessed,
+    records_failed = :recordsFailed,
+    records_skipped = :recordsSkipped,
+    records_purged = :recordsPurged,
+    completed_at = :completedAt,
+    error_message = :errorMessage
+WHERE version = :version;
+
+-- =====================================================================
+-- Key Migration — Paginated Queries
+-- =====================================================================
+
+findAllBindingsPaged:
+SELECT *
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+ORDER BY id
+LIMIT :limit OFFSET :offset;
+
+countAllBindings:
+SELECT COUNT(*)
+FROM identity_link_binding
+WHERE tenant_id = :tenantId;
+
+findNonKeyMatchesPaged:
+SELECT *
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND identifier_type != 'KEY'
+ORDER BY id
+LIMIT :limit OFFSET :offset;
+
+countNonKeyMatches:
+SELECT COUNT(*)
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND identifier_type != 'KEY';
+
+findInactiveOldKeyMatches:
+SELECT *
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND identifier_type = 'KEY'
+  AND hash_key_version = :oldKeyVersion
+  AND (last_used_at IS NULL OR last_used_at < :inactiveSince);
+
+countInactiveOldKeyMatches:
+SELECT COUNT(*)
+FROM identity_match
+WHERE tenant_id = :tenantId
+  AND identifier_type = 'KEY'
+  AND hash_key_version = :oldKeyVersion
+  AND (last_used_at IS NULL OR last_used_at < :inactiveSince);
+
+findAllAuxPaged:
+SELECT *
+FROM auxiliary_data
+WHERE tenant_id = :tenantId
+ORDER BY id
+LIMIT :limit OFFSET :offset;
+
+countAllAux:
+SELECT COUNT(*)
+FROM auxiliary_data
+WHERE tenant_id = :tenantId;
+
+-- =====================================================================
+-- Soft-Delete Queries (GDPR Art. 17)
+-- =====================================================================
+
+softDeleteMatch:
+UPDATE identity_match
+SET deleted_at = :deletedAt, deletion_reason = :deletionReason
+WHERE tenant_id = :tenantId AND id = :matchId;
+
+softDeleteBinding:
+UPDATE identity_link_binding
+SET deleted_at = :deletedAt, deletion_reason = :deletionReason
+WHERE tenant_id = :tenantId AND id = :bindingId;
+
+findSoftDeletedMatchesPastRetention:
+SELECT *
+FROM identity_match
+WHERE deleted_at IS NOT NULL
+  AND deleted_at < :retentionCutoff;
+
+findSoftDeletedBindingsPastRetention:
+SELECT *
+FROM identity_link_binding
+WHERE deleted_at IS NOT NULL
+  AND deleted_at < :retentionCutoff;
+
+hardDeleteMatch:
+DELETE FROM identity_match
+WHERE tenant_id = :tenantId AND id = :matchId AND deleted_at IS NOT NULL;
+
+hardDeleteBinding:
+DELETE FROM identity_link_binding
+WHERE tenant_id = :tenantId AND id = :bindingId AND deleted_at IS NOT NULL;
+
+-- Inactive binding cleanup (§7.1 Storage Limitation — 2-year retention)
+
+findInactiveBindings:
+SELECT ilb.*
+FROM identity_link_binding ilb
+WHERE ilb.tenant_id = :tenantId
+  AND ilb.deleted_at IS NULL
+  AND (ilb.last_used_at IS NULL OR ilb.last_used_at < :inactiveSince);
+
+countInactiveBindings:
+SELECT COUNT(*)
+FROM identity_link_binding
+WHERE tenant_id = :tenantId
+  AND deleted_at IS NULL
+  AND (last_used_at IS NULL OR last_used_at < :inactiveSince);
+
+-- =====================================================================
+-- Audit Events (§6.6 — append-only)
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS audit_event (
+    id              TEXT NOT NULL PRIMARY KEY,
+    tenant_id       TEXT NOT NULL,
+    event_type      TEXT NOT NULL,
+    correlation_id  TEXT,
+    subject_hash    TEXT,
+    client_id       TEXT,
+    detail          TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE AS Instant NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_event (tenant_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_event (created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_correlation ON audit_event (correlation_id) WHERE correlation_id IS NOT NULL;
+
+insertAuditEvent:
+INSERT INTO audit_event(id, tenant_id, event_type, correlation_id, subject_hash, client_id, detail, created_at)
+VALUES (:id, :tenantId, :eventType, :correlationId, :subjectHash, :clientId, :detail, :createdAt);
+
+findAuditEventsByType:
+SELECT *
+FROM audit_event
+WHERE tenant_id = :tenantId AND event_type = :eventType
+ORDER BY created_at DESC
+LIMIT :limit OFFSET :offset;
+
+findAuditEventsByCorrelation:
+SELECT *
+FROM audit_event
+WHERE correlation_id = :correlationId
+ORDER BY created_at;

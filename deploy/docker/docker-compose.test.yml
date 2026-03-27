@@ -1,0 +1,177 @@
+# Docker Compose test stack for portal integration / E2E testing.
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#
+# This stack provides:
+#   - PostgreSQL 15 (for Keycloak; services use in-memory stores)
+#   - Keycloak 26.0 with the "portal" realm (acts as the STS federation upstream)
+#   - A second Keycloak instance with the "surf" realm (simulates SURF/SURFconext)
+#   - service-sts  (OAuth2 authorization server, port 8080)
+#   - service-auth-bridge (OID4VP + reconciliation, port 8090)
+#
+# The portal Next.js app runs on the host via `npm run dev` (port 3000).
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - portal-test
+
+  # ── Keycloak (portal realm — simulates institution IdP) ───────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm --health-enabled=true
+    environment:
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/portal
+      KC_DB_USERNAME: portal
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-test-password}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./keycloak/portal-realm.json:/opt/keycloak/data/import/portal-realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && exit 0 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - portal-test
+
+  # ── Keycloak SURF (surf realm — simulates SURFconext federation) ──
+  keycloak-surf:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm --health-enabled=true
+    environment:
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_DB: dev-file
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8084:8080"
+    volumes:
+      - ./keycloak/surf-realm.json:/opt/keycloak/data/import/surf-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && exit 0 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - portal-test
+
+  # ── STS (Security Token Service) ──────────────────────────────────
+  service-sts:
+    build:
+      context: ../..
+      dockerfile: services/service-sts/docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/portal
+      DATABASE_USERNAME: portal
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-test-password}
+      STS_ISSUER_URL: http://localhost:8080
+      STS_BASE_URL: http://localhost:8080
+      IDENTITY_ATTRIBUTE_RULES_FILE: /app/config/identity-attribute-rules.yml
+      # Federation upstream → Keycloak portal realm
+      # These env vars are resolved by IDK interpolation: ${env:VAR:default} in application.properties
+      FEDERATION_ISSUER_URL: http://keycloak:8080/realms/portal
+      FEDERATION_CLIENT_ID: portal
+      FEDERATION_CLIENT_SECRET: dev-client-secret
+      # Browser-accessible authorization endpoint (host can't resolve http://keycloak:8080)
+      FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE: http://localhost:8083/realms/portal/protocol/openid-connect/auth
+      # Auth bridge URL for wallet session verification (resolved via ${env:AUTH_BRIDGE_BASE_URL:...} in application.properties)
+      AUTH_BRIDGE_BASE_URL: http://service-auth-bridge:8090
+      # Allow HTTP for Docker-internal hostnames (keycloak:8080)
+      OAUTH2_CLIENT_ALLOW_INSECURE_HTTP: "true"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - portal-test
+
+  # ── Auth Bridge ───────────────────────────────────────────────────
+  service-auth-bridge:
+    build:
+      context: ../..
+      dockerfile: services/service-auth-bridge/docker/Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      PORT: 8090
+      DATABASE_URL: jdbc:postgresql://postgres:5432/portal
+      DATABASE_USERNAME: portal
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-test-password}
+      STS_URL: http://service-sts:8080
+      HMAC_KEY_A: test-hmac-key-a-for-e2e-testing
+      HMAC_KEY_B: test-hmac-key-b-for-e2e-testing
+      IDENTITY_ATTRIBUTE_RULES_FILE: /app/config/identity-attribute-rules.yml
+      # Reconciliation provider → Keycloak portal realm
+      # Reconciliation provider config — env vars override YAML via EnvPropertySource (HIGHEST priority)
+      # Key format: normalized to identity.reconciliation.providers.surf.*
+      IDENTITY_RECONCILIATION_PROVIDERS_SURF_ISSUER_URL: http://keycloak:8080/realms/portal
+      IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_ID: portal-reconciliation
+      IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_SECRET: dev-secret
+      # Browser-accessible authorization endpoint (host browser cannot reach keycloak:8080)
+      IDENTITY_RECONCILIATION_OIDC_CLIENTS_SURF_OIDC_AUTHORIZATION_ENDPOINT_OVERRIDE: http://localhost:8083/realms/portal/protocol/openid-connect/auth
+      # Docker-internal discovery URL (overrides the default YAML which points at localhost:8083)
+      IDENTITY_RECONCILIATION_OIDC_CLIENTS_SURF_OIDC_DISCOVERY_URL: http://keycloak:8080/realms/portal/.well-known/openid-configuration
+      # Docker-internal token endpoint (keycloak:8080 is reachable inside Docker, localhost:8083 is not)
+      IDENTITY_RECONCILIATION_OIDC_CLIENTS_SURF_OIDC_TOKEN_ENDPOINT_OVERRIDE: http://keycloak:8080/realms/portal/protocol/openid-connect/token
+      # Allow HTTP for Docker-internal hostnames (keycloak:8080)
+      OAUTH2_CLIENT_ALLOW_INSECURE_HTTP: "true"
+    volumes:
+      - auth-bridge-data:/app/data
+    depends_on:
+      service-sts:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8090/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - portal-test
+
+volumes:
+  pgdata-test:
+  auth-bridge-data:
+
+networks:
+  portal-test:
+    driver: bridge

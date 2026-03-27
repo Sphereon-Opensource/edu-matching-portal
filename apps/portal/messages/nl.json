@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appDescription": "Identiteitsportaal",
+    "poweredBy": "Sphereon",
+    "tryAgain": "Opnieuw proberen",
+    "back": "Terug",
+    "goHome": "Naar home",
+    "or": "of"
+  },
+  "error": {
+    "title": "Er is iets misgegaan",
+    "notFoundTitle": "404 - Pagina niet gevonden",
+    "notFoundDescription": "De pagina die u zoekt bestaat niet."
+  },
+  "nav": {
+    "holder": "Houder",
+    "credentials": "Credentials",
+    "verifier": "Verificateur",
+    "sessions": "Sessies",
+    "issuer": "Uitgever",
+    "documents": "Documenten",
+    "profile": "Profiel",
+    "admin": "Beheer",
+    "logout": "Uitloggen"
+  },
+  "theme": {
+    "light": "Licht",
+    "dark": "Donker",
+    "auto": "Auto"
+  },
+  "login": {
+    "title": "Inloggen",
+    "description": "Kies uw gewenste authenticatiemethode.",
+    "federated": "Inloggen met eduID",
+    "loginWith": "Inloggen met {provider}",
+    "wallet": "Inloggen met Wallet",
+    "tabFederation": "Instellingsaccount",
+    "tabWallet": "Wallet",
+    "federationHint": "Log in met uw instellingsaccount",
+    "walletHint": "Scan een QR-code met uw wallet-app",
+    "walletScan": "QR-code scannen",
+    "stsUnavailable": "De authenticatieservice (STS) is momenteel niet beschikbaar. Probeer het later opnieuw of neem contact op met support.",
+    "authBridgeUnavailable": "De wallet-service is momenteel niet beschikbaar. Probeer het later opnieuw of neem contact op met support.",
+    "tabReconciliation": "Account koppelen",
+    "tabCompleting": "Voltooien..."
+  },
+  "wallet": {
+    "qrInstructions": "Scan deze QR-code met uw wallet-app om te authenticeren.",
+    "openWallet": "Open in Wallet",
+    "sessionExpired": "De sessie is verlopen. Probeer het opnieuw.",
+    "waitingForResponse": "Wachten op wallet-reactie...",
+    "startingLogin": "Wallet-login starten...",
+    "completingAuth": "Authenticatie voltooien..."
+  },
+  "idv": {
+    "title": "Eerste wallet-login",
+    "description": "Dit is de eerste keer dat u inlogt met deze wallet. Om uw identiteit te verifiëren, logt u eenmalig in via een van de onderstaande opties.",
+    "linkButton": "Inloggen met instellingsaccount"
+  },
+  "holder": {
+    "title": "Houder Dashboard",
+    "credentialsTitle": "Uw Credentials",
+    "credentialsEmpty": "Nog geen credentials. Uw geverifieerde credentials verschijnen hier.",
+    "credentialStoreTitle": "Credential Opslag",
+    "credentialStoreDescription": "Beheer hier uw verifiable credentials."
+  },
+  "verifier": {
+    "title": "Verificateur",
+    "requestsTitle": "Verificatieverzoeken",
+    "requestsDescription": "Maak en beheer verificatieverzoeken.",
+    "sessionsTitle": "Verificatiesessies",
+    "activeSessionsTitle": "Actieve Sessies",
+    "activeSessionsEmpty": "Geen actieve verificatiesessies.",
+    "sessionDetailTitle": "Sessiedetail",
+    "sessionInfoTitle": "Sessie-informatie",
+    "sessionInfoDescription": "Sessiedetails verschijnen hier."
+  },
+  "issuer": {
+    "title": "Uitgever",
+    "issuanceTitle": "Uitgifte",
+    "issuanceDescription": "Verifiable credentials uitgeven.",
+    "issuedTitle": "Uitgegeven Credentials",
+    "templatesTitle": "Credential Sjablonen",
+    "templatesDescription": "Beheer credential sjablonen en uitgifte."
+  },
+  "documents": {
+    "title": "Documenten",
+    "description": "Blader door, upload en beheer uw documenten.",
+    "serviceUnavailable": "De documentservice is momenteel niet beschikbaar. Probeer het later opnieuw.",
+    "allFiles": "Alle bestanden",
+    "colName": "Naam",
+    "colSize": "Grootte",
+    "colModified": "Gewijzigd",
+    "colCreated": "Aangemaakt",
+    "colType": "Type",
+    "upload": "Uploaden",
+    "noFiles": "Geen bestanden gevonden",
+    "loading": "Laden...",
+    "loadMore": "Meer laden",
+    "delete": "Verwijderen",
+    "cancel": "Annuleren"
+  },
+  "profile": {
+    "title": "Profiel",
+    "userInfoTitle": "Account",
+    "name": "Naam",
+    "email": "E-mail",
+    "institution": "Instelling",
+    "eduid": "eduID",
+    "principalName": "Gebruikersnaam",
+    "authMethod": "Inlogmethode",
+    "authMethodFederated": "Instellingsaccount (eduID)",
+    "authMethodWallet": "Wallet",
+    "assurance": "Betrouwbaarheidsniveau",
+    "acr": "Authenticatiecontext",
+    "amr": "Authenticatiemethoden",
+    "sessionExpires": "Sessie verloopt",
+    "walletsTitle": "Gekoppelde Wallets",
+    "walletsDescription": "Wallets die aan uw account zijn gekoppeld. Elke wallet kan worden gebruikt om in te loggen zonder opnieuw via uw instelling te hoeven authenticeren.",
+    "walletsEmpty": "Er zijn nog geen wallets gekoppeld. Log in met een wallet om deze aan uw account te koppelen.",
+    "walletLinkedOn": "Gekoppeld op",
+    "revokeWallet": "Intrekken",
+    "revokeConfirm": "Weet u zeker dat u deze wallet wilt intrekken? U moet de wallet opnieuw koppelen om met dit apparaat in te loggen.",
+    "tokensLink": "Tokens bekijken",
+    "tokensTitle": "Token Inspector",
+    "tokensDescription": "Gedecodeerde tokens uit uw huidige sessie. Handig om te controleren of claims en betrouwbaarheidsmetadata correct zijn.",
+    "sessionInfo": "Sessie",
+    "idToken": "ID Token",
+    "accessToken": "Access Token",
+    "showRaw": "Toon ruwe token",
+    "hideRaw": "Verberg ruwe token",
+    "notPresent": "Niet aanwezig",
+    "decodedPayload": "Gedecodeerd payload"
+  },
+  "admin": {
+    "title": "Beheer",
+    "overviewTitle": "Systeemoverzicht",
+    "overviewDescription": "Portaalbeheer en configuratie.",
+    "usersTitle": "Gebruikersbeheer",
+    "usersCardTitle": "Gebruikers",
+    "usersDescription": "Beheer portaalgebruikers en rollen.",
+    "settingsTitle": "Instellingen",
+    "settingsCardTitle": "Portaalinstellingen",
+    "settingsDescription": "Configureer portaalinstellingen."
+  }
+}

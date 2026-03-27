@@ -1,0 +1,229 @@
+{
+  "realm": "surf",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "clients": [
+    {
+      "clientId": "portal-federation-client",
+      "name": "Portal Federation Client",
+      "description": "Client for the portal realm's identity provider (simulates SURF federation)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "dev-federation-secret",
+      "redirectUris": [
+        "http://localhost:8083/realms/portal/broker/surf-federation/endpoint",
+        "http://keycloak:8080/realms/portal/broker/surf-federation/endpoint"
+      ],
+      "webOrigins": [
+        "http://localhost:8083",
+        "http://keycloak:8080"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "surf-claims"
+      ]
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "openid",
+      "description": "OpenID Connect scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false"
+      }
+    },
+    {
+      "name": "profile",
+      "description": "OpenID Connect built-in scope: profile",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "email",
+      "description": "OpenID Connect built-in scope: email",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "emailVerified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "email_verified",
+            "jsonType.label": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "name": "surf-claims",
+      "description": "SURF federation claims (eduid, schac_home_organization)",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "eduid-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "eduid",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "eduid",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "schac-home-org-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "schac_home_organization",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "schac_home_organization",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": [
+    "openid",
+    "profile",
+    "email",
+    "surf-claims"
+  ],
+  "users": [
+    {
+      "username": "student1@kw1c.nl",
+      "enabled": true,
+      "email": "student1@kw1c.nl",
+      "emailVerified": true,
+      "firstName": "Jan",
+      "lastName": "de Vries",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "eduid": ["urn:mace:eduid.nl:1.0:d57b4:test-student-001"],
+        "schac_home_organization": ["kw1c.nl"]
+      }
+    },
+    {
+      "username": "student2@kw1c.nl",
+      "enabled": true,
+      "email": "student2@kw1c.nl",
+      "emailVerified": true,
+      "firstName": "Pieter",
+      "lastName": "Bakker",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "eduid": ["urn:mace:eduid.nl:1.0:d57b4:test-student-002"],
+        "schac_home_organization": ["kw1c.nl"]
+      }
+    },
+    {
+      "username": "staff1@kw1c.nl",
+      "enabled": true,
+      "email": "staff1@kw1c.nl",
+      "emailVerified": true,
+      "firstName": "Marie",
+      "lastName": "Jansen",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "eduid": ["urn:mace:eduid.nl:1.0:d57b4:test-staff-001"],
+        "schac_home_organization": ["kw1c.nl"]
+      }
+    }
+  ]
+}

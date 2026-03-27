@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: KW1C External Reconciliation API
+  description: |
+    OAuth2-protected REST API for authorized third-party systems to query
+    reconciled identity data. Requires a bearer token with the
+    `reconciliation:read` scope. Per-client claim and auxiliary field
+    projection is enforced server-side.
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8090
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Identity Lookup
+    description: Look up reconciled identities by hashed identifier
+  - name: Identity Data
+    description: Retrieve projected claims and auxiliary data
+  - name: Auxiliary Data
+    description: Read and write supplementary data linked to identities
+  - name: GDPR
+    description: Data erasure operations
+
+paths:
+  /api/external/v1/reconciliation/lookup:
+    post:
+      operationId: lookupIdentity
+      summary: Look up identity by identifier hash
+      description: |
+        Looks up a reconciled identity using an HMAC-hashed identifier.
+        The caller must hash the identifier client-side using the same
+        HMAC key and algorithm agreed upon during onboarding.
+      tags: [Identity Lookup]
+      parameters:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LookupRequest'
+      responses:
+        '200':
+          description: Lookup result (found or not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/external/v1/reconciliation/{internalIdentityId}:
+    get:
+      operationId: getIdentity
+      summary: Get full projected identity
+      description: Returns projected canonical claims and auxiliary data for the identity.
+      tags: [Identity Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+      responses:
+        '200':
+          description: Projected identity with claims and auxiliary data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      operationId: deleteIdentity
+      summary: GDPR erasure — permanently delete all data for an identity
+      description: |
+        Permanently and irreversibly deletes all identity matches, link bindings,
+        and auxiliary data for the given identity. Requires write permission.
+      tags: [GDPR]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+      responses:
+        '204':
+          description: Identity and all related data permanently deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/external/v1/reconciliation/{internalIdentityId}/claims:
+    get:
+      operationId: getClaims
+      summary: Get projected canonical claims only
+      description: Returns only the projected canonical claims (no auxiliary data).
+      tags: [Identity Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+      responses:
+        '200':
+          description: Projected canonical claims
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                example:
+                  given_name: Jan
+                  family_name: de Vries
+                  email: jan@kw1c.nl
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/external/v1/reconciliation/{internalIdentityId}/auxiliary:
+    get:
+      operationId: getAuxiliary
+      summary: Get all projected auxiliary data categories
+      tags: [Auxiliary Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+      responses:
+        '200':
+          description: All auxiliary categories (projected per client config)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties: true
+                example:
+                  enrollment:
+                    enrollment_status: active
+                    programme_code: ICT-SE
+                  grades:
+                    gpa: 7.5
+                    credits: 42
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/external/v1/reconciliation/{internalIdentityId}/auxiliary/{category}:
+    get:
+      operationId: getAuxiliaryCategory
+      summary: Get a single auxiliary data category
+      tags: [Auxiliary Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+        - $ref: '#/components/parameters/Category'
+      responses:
+        '200':
+          description: Projected fields for the requested category
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                example:
+                  enrollment_status: active
+                  programme_code: ICT-SE
+                  cohort: "2024"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: putAuxiliary
+      summary: Store or update auxiliary data
+      description: Requires write permission in the client's projection config.
+      tags: [Auxiliary Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+        - $ref: '#/components/parameters/Category'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuxiliaryWriteRequest'
+      responses:
+        '200':
+          description: Auxiliary data stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  category:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      operationId: deleteAuxiliaryCategory
+      summary: Delete an auxiliary data category
+      description: Requires write permission in the client's projection config.
+      tags: [Auxiliary Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+        - $ref: '#/components/parameters/Category'
+      responses:
+        '204':
+          description: Auxiliary data category deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/external/v1/devices/{internalIdentityId}:
+    get:
+      operationId: getDevices
+      summary: List all linked holder keys (devices)
+      description: Returns all identity match records for this identity, representing linked wallet devices.
+      tags: [Identity Data]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+      responses:
+        '200':
+          description: List of linked devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/external/v1/devices/{internalIdentityId}/{matchId}:
+    delete:
+      operationId: deleteDevice
+      summary: Revoke a linked holder key (device)
+      description: Deletes the identity match and its binding, revoking the wallet's ability to log in via the fast path. Requires write permission.
+      tags: [GDPR]
+      parameters:
+        - $ref: '#/components/parameters/InternalIdentityId'
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identity match ID to revoke
+      responses:
+        '204':
+          description: Device revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OAuth2 bearer token with `reconciliation:read` scope
+
+  parameters:
+    InternalIdentityId:
+      name: internalIdentityId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Internal identity ID (returned from lookup)
+
+    Category:
+      name: category
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Auxiliary data category (e.g. enrollment, grades)
+
+
+  schemas:
+    LookupRequest:
+      type: object
+      required: [identifierType]
+      properties:
+        identifier:
+          type: string
+          description: Plaintext institution identifier (eduid, email, student number). Server hashes with Key B before lookup. Use for SUBJECT_ID lookups.
+        identifierHash:
+          type: string
+          description: Pre-hashed identifier (HMAC). Use for KEY lookups where the hash was obtained from the wallet VP flow.
+        identifierType:
+          type: string
+          description: Identifier type
+          enum: [KEY, DID, EMAIL, SUBJECT_ID, CLAIM_TUPLE]
+
+    IdentityResponse:
+      type: object
+      required: [found]
+      properties:
+        found:
+          type: boolean
+        internalIdentityId:
+          type: string
+        claims:
+          type: object
+          additionalProperties: true
+          description: Projected canonical claims
+        auxiliary:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: Projected auxiliary data by category
+        assurance:
+          $ref: '#/components/schemas/AssuranceSummary'
+        lastVerifiedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the last identity verification
+
+    AssuranceSummary:
+      type: object
+      properties:
+        oidcAcr:
+          type: string
+          description: Authentication Context Class Reference from the OIDC provider
+          example: urn:sphereon:oid4vp:vp+idv
+        oidcAmr:
+          type: array
+          items:
+            type: string
+          description: Authentication Methods References from the OIDC provider
+          example: [vp, idv]
+        walletAssuranceLevel:
+          type: string
+          description: Assurance level reported by the wallet
+        executionId:
+          type: string
+          description: Reconciliation execution ID (session reference)
+        evidenceReferenceHash:
+          type: string
+          description: Hash referencing the verification evidence
+
+    DeviceInfo:
+      type: object
+      properties:
+        matchId:
+          type: string
+          description: Identity match ID (use for revocation)
+        identifierType:
+          type: string
+          description: Identifier type (KEY, DID, etc.)
+        linkedAt:
+          type: string
+          format: date-time
+          description: When the device was first linked
+        lastUsedAt:
+          type: string
+          format: date-time
+          description: Last login with this device
+        providerId:
+          type: string
+          description: Reconciliation provider used for linking
+
+    AuxiliaryWriteRequest:
+      type: object
+      required: [fields]
+      properties:
+        fields:
+          type: object
+          additionalProperties: true
+          description: Key-value pairs to store
+          example:
+            enrollment_status: active
+            programme_code: ICT-SE
+            cohort: "2024"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        errorDescription:
+          type: string
+          description: Human-readable error description
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: unauthorized
+            errorDescription: Bearer token required
+
+    Forbidden:
+      description: Client not authorized or insufficient scope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: forbidden
+            errorDescription: Client not authorized
+
+    NotFound:
+      description: Identity or resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: not_found
+            errorDescription: Identity not found

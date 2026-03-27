@@ -1,0 +1,58 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.description {
+  color: var(--color-secondary);
+  font-size: 0.9rem;
+  margin-top: calc(-1 * var(--spacing-sm));
+}
+
+.pre {
+  background: var(--color-surfaceVariant);
+  color: var(--color-onSurface);
+  padding: var(--spacing-md);
+  border-radius: var(--shape-cornerSmall);
+  overflow: auto;
+  max-height: 400px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+.toggleButton {
+  background: none;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--shape-cornerSmall);
+  padding: 4px var(--spacing-sm);
+  font-size: 0.8rem;
+  color: var(--color-onSurface);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: var(--spacing-sm);
+}
+
+.toggleButton:hover {
+  background: var(--color-surfaceVariant);
+}
+
+.notPresent {
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+.backLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

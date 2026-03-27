@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  service-sts:
+    build:
+      context: ../..
+      dockerfile: services/service-sts/docker/Dockerfile
+    ports:
+      - "8092:8092"
+    environment:
+      PORT: 8092
+      DATABASE_URL: jdbc:postgresql://postgres:5432/portal
+      DATABASE_USERNAME: portal
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
+      STS_ISSUER_URL: http://localhost:8092
+      IDENTITY_ATTRIBUTE_RULES_FILE: config/identity-attribute-rules.yml
+      FEDERATION_ISSUER_URL: ${SURF_ISSUER_URL:-https://connect.test.surfconext.nl}
+      FEDERATION_CLIENT_ID: ${SURF_CLIENT_ID:-kw1c-surf.demo.sphereon.com}
+      FEDERATION_CLIENT_SECRET: ${SURF_CLIENT_SECRET:-dev-client-secret}
+      # Override authorization endpoint only when using local Keycloak (leave empty for SURFconext)
+      FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE: ${FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE:-}
+      AUTH_BRIDGE_BASE_URL: http://service-auth-bridge:8090
+      KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/portal
+      KEYCLOAK_ENABLED: "true"
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_AUTHORIZATION_ENDPOINT_OVERRIDE: http://localhost:8083/realms/portal/protocol/openid-connect/auth
+      KEYCLOAK_TOKEN_ENDPOINT_OVERRIDE: http://keycloak:8080/realms/portal/protocol/openid-connect/token
+      KEYCLOAK_USERINFO_ENDPOINT_OVERRIDE: http://keycloak:8080/realms/portal/protocol/openid-connect/userinfo
+      OAUTH2_CLIENT_ALLOW_INSECURE_HTTP: "true"
+    depends_on:
+      - postgres
+
+  service-auth-bridge:
+    build:
+      context: ../..
+      dockerfile: services/service-auth-bridge/docker/Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      PORT: 8090
+      DATABASE_URL: jdbc:postgresql://postgres:5432/portal
+      DATABASE_USERNAME: portal
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
+      STS_URL: http://service-sts:8092
+      STS_BASE_URL: http://localhost:8092
+      IDENTITY_ATTRIBUTE_RULES_FILE: config/identity-attribute-rules.yml
+      HMAC_KEY_A: ${HMAC_KEY_A:-dev-hmac-key-a-change-in-production}
+      HMAC_KEY_B: ${HMAC_KEY_B:-dev-hmac-key-b-change-in-production}
+      RECONCILIATION_ISSUER_URL: ${SURF_ISSUER_URL:-https://connect.test.surfconext.nl}
+      IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_ID: ${SURF_CLIENT_ID:-kw1c-surf.demo.sphereon.com}
+      IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_SECRET: ${SURF_CLIENT_SECRET:-dev-client-secret}
+      EXTERNAL_API_JWT_JWKS_URI: http://keycloak:8080/realms/portal/protocol/openid-connect/certs
+    volumes:
+      - auth-bridge-keystore:/app/data/keystore
+    depends_on:
+      - postgres
+      - service-sts
+
+  service-blobstore-camel:
+    build:
+      context: ../..
+      dockerfile: services/service-blobstore-camel/docker/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      AZURE_BLOB_SAS_TOKEN: ${AZURE_BLOB_SAS_TOKEN:-}
+    volumes:
+      - blobdata:/app/data/blobstores
+
+  portal:
+    build:
+      context: ../..
+      dockerfile: apps/portal/Dockerfile
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      STS_ISSUER_URL: http://localhost:8092
+      STS_INTERNAL_URL: http://service-sts:8092
+      STS_CLIENT_ID: portal
+      STS_CLIENT_SECRET: ${STS_CLIENT_SECRET:-dev-client-secret}
+      AUTH_BRIDGE_URL: http://service-auth-bridge:8090
+      BLOB_SERVICE_URL: http://service-blobstore-camel:8081
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production}
+      AUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production}
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_APP_NAME: ${APP_NAME:-KW1C Portal}
+      NEXT_PUBLIC_PRIMARY_COLOR: ${PRIMARY_COLOR:-#0085CA}
+      NEXT_PUBLIC_SECONDARY_COLOR: ${SECONDARY_COLOR:-#EF2B2D}
+      NEXT_PUBLIC_LOGO_URL: ${LOGO_URL:-/branding/kw1c-logo.svg}
+      NEXT_PUBLIC_LOGO_DARK_URL: ${LOGO_DARK_URL:-/branding/kw1c-logo-dark.svg}
+    depends_on:
+      - service-sts
+      - service-auth-bridge
+      - service-blobstore-camel
+
+volumes:
+  pgdata:
+  blobdata:
+  auth-bridge-keystore:

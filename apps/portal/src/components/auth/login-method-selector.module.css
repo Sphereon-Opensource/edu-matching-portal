@@ -1,0 +1,115 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.description {
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-xs);
+  text-align: center;
+}
+
+.error {
+  color: var(--color-error, #e53e3e);
+  text-align: center;
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.9rem;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--color-outline, #e2e8f0);
+  gap: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-secondary, #6b7280);
+  transition: color 0.15s, border-color 0.15s;
+  text-align: center;
+}
+
+.tab:hover:not(.tabActive) {
+  color: var(--color-on-surface, #1a1a1a);
+}
+
+.tabActive {
+  color: var(--color-primary, #0085CA);
+  border-bottom-color: var(--color-primary, #0085CA);
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: var(--spacing-sm);
+}
+
+.tabHint {
+  font-size: 0.825rem;
+  color: var(--color-secondary);
+  text-align: center;
+  margin: 0 0 2px;
+}
+
+/* ── Provider buttons (tabbed layout) ── */
+.providerButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid var(--color-outline, #e2e8f0);
+  border-left: 3px solid var(--color-primary, #0085CA);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: var(--color-on-surface);
+  font-size: 0.925rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.providerButton:hover:not(:disabled) {
+  border-color: var(--color-primary, #0085CA);
+  box-shadow: 0 2px 12px rgba(0, 133, 202, 0.12);
+  transform: translateY(-1px);
+}
+
+.providerButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 133, 202, 0.1);
+}
+
+.providerButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Locked tab (reconciliation / completing) ── */
+.tabLocked {
+  display: flex;
+  justify-content: center;
+  border-bottom: 2px solid var(--color-outline, #e2e8f0);
+}
+
+.tabLockedLabel {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary, #0085CA);
+  border-bottom: 2px solid var(--color-primary, #0085CA);
+  margin-bottom: -2px;
+}

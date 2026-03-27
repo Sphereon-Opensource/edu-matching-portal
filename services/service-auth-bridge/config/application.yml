@@ -1,0 +1,310 @@
+sphereon:
+  app:
+    # ── CORS ────────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins. When empty, falls back to
+    # FRONTEND_URL env var. When neither is set, all origins are allowed.
+    cors:
+      allowed-origins: ${env:FRONTEND_URL:}
+
+    # ── Universal OID4VP ─────────────────────────────────────────────────
+    oid4vp:
+      universal:
+        external-base-url: https://vdx-verifier.ngrok.dev
+        response-uri: https://vdx-verifier.ngrok.dev/oid4vp/auth/response
+      auth-bridge:
+        default-dcql-query: '{"credentials":[{"id":"eduid_vc","format":"dc+sd-jwt","meta":{"vct_values":["https://issuer.dev.eduid.nl/vct/eduid"]},"claims":[{"path":["iss"],"values":["did:web:issuer.dev.eduid.nl"]},{"path":["given_name"]},{"path":["family_name"]},{"path":["name"]},{"path":["email"]},{"path":["schac_home_organization"]},{"path":["eduperson_assurance"]},{"path":["eduperson_scoped_affiliation"]},{"path":["is_employee"]},{"path":["is_staff"]},{"path":["is_faculty"]},{"path":["is_affiliate"]},{"path":["is_library-walk-in"]},{"path":["is_member"]},{"path":["is_alum"]},{"path":["is_student"]}]}]}'
+        response-uri: https://vdx-verifier.ngrok.dev/oid4vp/backend/auth/requests/{id}/response
+        session-ttl-seconds: 300
+        frontend-url: ${env:FRONTEND_URL:http://localhost:3000}
+        idv-callback-url: ${env:IDV_CALLBACK_URL:http://localhost:8090/auth/oid4vp/idv/callback}
+        require-reconciliation: true
+        auto-create-user: false
+        user-identifier-claim-path: email
+        sts-base-url: ${env:STS_BASE_URL:http://localhost:8092}
+        wallet-claim-mapping-mode: auto
+        wallet-claim-exclusions: iss,vct,cnf,iat,exp,nbf
+        universal-api:
+          base-url: http://localhost:8090/oid4vp
+          connection-timeout-ms: 30000
+          request-timeout-ms: 120000
+        user-api:
+          base-url: http://localhost:8090/api/users/v1
+          connection-timeout-ms: 30000
+          request-timeout-ms: 60000
+      request-uri:
+        signing-key-alias: auth-bridge-jar-signing-key
+        signing-key-provider-id: software
+        expiration-seconds: 300
+        signing-jar-enabled: true
+
+    # ── KMS (Key Management Service) ─────────────────────────────────────
+    # Two providers are available: "software" (PKCS#12 file) for development
+    # and "azure" (Azure Key Vault) for production. Enable one at a time.
+    # When switching to Azure KV, also update crypto.hmac-key-provider-id
+    # and crypto.encryption-key-provider-id below to "azure".
+    kms:
+      providers:
+        software:
+          type: software
+          id: software
+          enabled: true
+          persist-keys-during-generation: true
+          expose-private-keys-during-generation: true
+          auto-create-certificate: true
+          keystore:
+            type: pkcs12
+            id: software
+            key-visibility: private
+            path: data/keystore/auth-bridge.p12
+            password: changeit
+            persist: true
+            overwrite-alias: true
+        # Azure Key Vault provider — uncomment and configure for production:
+        # azure:
+        #   type: azure_keyvault
+        #   id: azure
+        #   enabled: true
+        #   keyvault-url: ${env:AZURE_KEYVAULT_URL:}
+        #   tenant-id: ${env:AZURE_KEYVAULT_TENANT_ID:}
+        #   credential-mode: SERVICE_CLIENT_SECRET
+        #   application-id: ${env:AZURE_KEYVAULT_CLIENT_ID:}
+        #   client-secret: ${env:AZURE_KEYVAULT_CLIENT_SECRET:}
+        #   hsm-type: KEYVAULT
+
+    # ── Identity Reconciliation ──────────────────────────────────────────
+    identity:
+      reconciliation:
+        rule-version: "2026-03-24"
+
+        # ── Session TTL & Cleanup ──
+        session-ttl-seconds: ${oid4vp.auth-bridge.session-ttl-seconds:300}
+        session-cleanup:
+          interval-minutes: 5
+
+        # ── OIDC Client Configs ──
+        oidc-clients:
+          names: surf-oidc
+          surf-oidc:
+            discovery-url: ${env:RECONCILIATION_ISSUER_URL:https://connect.test.surfconext.nl}/.well-known/openid-configuration
+            client-id-ref:
+              key: IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_ID
+            client-secret-ref:
+              path: IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_SECRET
+              provider-id: env
+            scopes: openid,profile,email
+            user-info-enabled: true
+
+        # ── Reconciliation Providers ──
+        providers:
+          names: surf
+          surf:
+            id: surf
+            name: "SURFconext"
+            oidc-client-id: surf-oidc
+            identifier-attribute-name: sub
+            enabled: true
+            mapping-mode: derive-from-rules
+            assurance-acr: urn:sphereon:oid4vp:vp+idv
+            assurance-amr: vp,idv
+
+        # ── Selector Rules ──
+        selector-rules:
+          - id: default-surf
+            priority: 0
+            plan:
+              decision: RUN_IDV
+              provider-id: surf
+              method-id: surf-oidc
+              material-profile-id: holder-only-v1
+
+        # ── Material Profiles ──
+        material-profiles:
+          names: holder-only-v1
+          holder-only-v1:
+            version: "1"
+            materials:
+              - type: holder_key_fp
+                hmac-domain: holder
+
+        # ── Data Retention (§7.1 Storage Limitation) ──
+        retention:
+          # Inactive bindings older than this are soft-deleted (default: 2 years)
+          inactive-days: 730
+          # How often to check for inactive bindings (default: every hour)
+          cleanup-interval-minutes: 60
+          # Soft-deleted records are hard-deleted after this period (default: 30 days)
+          soft-delete-days: 30
+
+        # ── Key Migration ──
+        # Set target-version to trigger migration on next startup.
+        # Once completed, the version is recorded in key_migration_history —
+        # subsequent restarts with the same version are no-ops.
+        migration:
+          # target-version: 2
+          # operations: FULL
+          # inactive-since: "2024-01-01T00:00:00Z"
+          batch-size: 100
+
+        # ── Institution Lookup ──
+        # Which canonical attribute to use for institution-level reverse lookup
+        # (enables GDPR Art. 15 and External API lookup by eduid/email/student number).
+        # The value is hashed with Key B and stored as an identity_match record.
+        institution-lookup-attribute: eduperson_principal_name
+        institution-lookup-identifier-type: SUBJECT_ID
+
+        # ── Reconciliation Crypto Keys ──
+        crypto:
+          holder-hmac-key-alias: reconciliation:holder
+          holder-key-version: v1
+          institution-hmac-key-alias: reconciliation:institution
+          institution-key-version: v1
+          hmac-key-provider-id: software
+          encryption-key-alias: reconciliation:encryption
+          encryption-key-version: v1
+          encryption-key-provider-id: software
+          # Key rotation (uncomment during rotation):
+          # previous-holder-hmac-key-alias: reconciliation:holder
+          # previous-holder-key-version: v1
+          # previous-institution-hmac-key-alias: reconciliation:institution
+          # previous-institution-key-version: v1
+          # previous-encryption-key-alias: reconciliation:encryption
+          # previous-encryption-key-version: v1
+
+        # ── Canonical Attribute Rules (single source of truth) ──
+        # Per architecture §5.1: names and emails are transient (in-memory only).
+        # They are included in the STS token for the active session but never
+        # written to the mapping database. Only identifiers are persisted.
+        attribute-rules:
+          # Core identity — transient, projected to tokens but not persisted
+          - canonical-name: given_name
+            merge-mode: OIDC_WINS
+            required: true
+            persist: false
+            project: true
+          - canonical-name: family_name
+            merge-mode: OIDC_WINS
+            required: true
+            persist: false
+            project: true
+          - canonical-name: email
+            merge-mode: OIDC_WINS
+            required: true
+            persist: false
+            project: true
+          - canonical-name: name
+            merge-mode: OIDC_WINS
+            persist: false
+            project: true
+          # eduID identifiers (source differs from canonical name)
+          # Identity link — the ONLY persisted claim. Links wallet holder
+          # to institution identity. All other claims come live from the
+          # auth source (wallet VC or upstream IdP) at login time.
+          - canonical-name: federated_subject
+            merge-mode: OIDC_ONLY
+            persist: true
+            project: true
+            source-aliases:
+              surf: sub
+          # eduID — institution-specific identifier, persisted alongside
+          # federated_subject for use as the STS sub claim in wallet tokens
+          - canonical-name: eduid
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+            source-aliases:
+              surf: eduid
+          # Institution / organization (both sources)
+          - canonical-name: institution_id
+            merge-mode: OIDC_WINS
+            project: true
+            source-aliases:
+              surf: schac_home_organization
+          - canonical-name: schac_home_organization_type
+            merge-mode: OIDC_WINS
+          - canonical-name: ou
+            merge-mode: OIDC_WINS
+          # Affiliation & assurance (both sources)
+          - canonical-name: eduperson_affiliation
+            merge-mode: OIDC_WINS
+            project: true
+          - canonical-name: eduperson_scoped_affiliation
+            merge-mode: OIDC_WINS
+            project: true
+          - canonical-name: eduperson_assurance
+            merge-mode: OIDC_WINS
+            project: true
+          # Role flags (wallet VC has these, OIDC doesn't)
+          - canonical-name: is_employee
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_staff
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_faculty
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_affiliate
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_library_walk_in
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_member
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_alum
+            merge-mode: WALLET_ONLY
+            project: true
+          - canonical-name: is_student
+            merge-mode: WALLET_ONLY
+            project: true
+          # Claims present in both sources
+          - canonical-name: email_verified
+            merge-mode: OIDC_WINS
+          # eduPersonPrincipalName — persisted alongside eduid for wallet login
+          - canonical-name: eduperson_principal_name
+            merge-mode: OIDC_WINS
+            persist: true
+            project: true
+          # OIDC-only claims (not in wallet VC)
+          - canonical-name: eduperson_entitlement
+            merge-mode: OIDC_ONLY
+          - canonical-name: schac_personal_unique_code
+            merge-mode: OIDC_WINS
+            project: true
+          - canonical-name: uids
+            merge-mode: OIDC_ONLY
+          - canonical-name: eduperson_orcid
+            merge-mode: OIDC_ONLY
+          # Wallet-only (holder binding, not persisted)
+          - canonical-name: holder_key
+            merge-mode: WALLET_ONLY
+          - canonical-name: holder_did
+            merge-mode: WALLET_ONLY
+
+    # ── PostgreSQL Database ──────────────────────────────────────────────
+    database:
+      url: ${env:DATABASE_URL:jdbc:postgresql://localhost:5432/authbridge}
+      username: ${env:DATABASE_USERNAME:postgres}
+      password: ${env:DATABASE_PASSWORD:postgres}
+      max-pool-size: 5
+
+    # ── External REST API (/api/external/v1/reconciliation) ──────────────
+    external-api:
+      enabled: true
+      jwt:
+        issuer: http://localhost:8083/realms/portal
+        jwks-uri: http://keycloak:8080/realms/portal/protocol/openid-connect/certs
+      clients:
+        names: api
+        api:
+          client-id: api
+          scopes: reconciliation:read
+          can-write: true
+      # Example additional clients:
+      #   krs:
+      #     client-id: krs-system
+      #     scopes: reconciliation:read
+      #     projection:
+      #       claims: given_name,family_name,email
+      #     can-write: true

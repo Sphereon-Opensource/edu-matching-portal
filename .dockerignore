@@ -1,0 +1,19 @@
+**/node_modules
+**/.next
+**/.git
+**/build
+# Re-include fat JARs and config needed for Docker builds
+!services/*/build/libs/*-all.jar
+!services/*/config
+!apps/portal/.next
+**/*.hprof
+**/*.log
+**/replay_pid*
+**/hs_err_pid*
+**/.gradle
+**/.kotlin
+**/gradle
+**/gradlew
+**/gradlew.bat
+idk
+data/*/build
