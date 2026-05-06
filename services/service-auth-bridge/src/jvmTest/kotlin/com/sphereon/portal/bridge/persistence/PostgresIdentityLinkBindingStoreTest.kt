@@ -7,7 +7,7 @@ import com.sphereon.identity.matching.model.IdentityLinkBinding
 import com.sphereon.identity.matching.model.PersistedAttributesEnvelope
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll

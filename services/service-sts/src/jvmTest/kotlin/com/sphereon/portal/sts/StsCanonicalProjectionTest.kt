@@ -39,7 +39,7 @@ class StsCanonicalProjectionTest {
             "extra_upstream_claim" to "should-not-appear",
         )
 
-        val result = StsAuthProvidersModule.applyCanonicalProjection(
+        val result = StsFederatedClaimMapper.applyCanonicalProjection(
             rawClaims, extractionMappings, canonicalRules
         )
 
@@ -66,7 +66,7 @@ class StsCanonicalProjectionTest {
             "email" to "alice@example.com",
         )
 
-        val result = StsAuthProvidersModule.applyCanonicalProjection(
+        val result = StsFederatedClaimMapper.applyCanonicalProjection(
             rawClaims, extractionMappings, canonicalRules
         )
 
@@ -86,7 +86,7 @@ class StsCanonicalProjectionTest {
             "email" to "bob@example.com",
         )
 
-        val result = StsAuthProvidersModule.applyCanonicalProjection(
+        val result = StsFederatedClaimMapper.applyCanonicalProjection(
             rawClaims, extractionMappings, canonicalRules
         )
 
@@ -103,7 +103,7 @@ class StsCanonicalProjectionTest {
         )
 
         val ex = assertFailsWith<IllegalStateException> {
-            StsAuthProvidersModule.applyCanonicalProjection(
+            StsFederatedClaimMapper.applyCanonicalProjection(
                 rawClaims, extractionMappings, canonicalRules
             )
         }
@@ -122,7 +122,7 @@ class StsCanonicalProjectionTest {
         )
 
         // Should not throw -- all required attributes are present
-        val result = StsAuthProvidersModule.applyCanonicalProjection(
+        val result = StsFederatedClaimMapper.applyCanonicalProjection(
             rawClaims, extractionMappings, canonicalRules
         )
         assertEquals("Alice", result["given_name"])

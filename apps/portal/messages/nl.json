@@ -42,7 +42,15 @@
     "stsUnavailable": "De authenticatieservice (STS) is momenteel niet beschikbaar. Probeer het later opnieuw of neem contact op met support.",
     "authBridgeUnavailable": "De wallet-service is momenteel niet beschikbaar. Probeer het later opnieuw of neem contact op met support.",
     "tabReconciliation": "Account koppelen",
-    "tabCompleting": "Voltooien..."
+    "tabCompleting": "Voltooien...",
+    "errorConfiguration": "Authenticatie mislukt: er is een probleem met de configuratie van de authenticatieprovider. Probeer het opnieuw; neem contact op met support als het probleem aanhoudt.",
+    "errorAccessDenied": "Toegang geweigerd. U heeft de autorisatie geweigerd of de authenticatieprovider heeft het verzoek afgewezen.",
+    "errorVerification": "Authenticatie mislukt: het verificatietoken is ongeldig of verlopen. Probeer het opnieuw.",
+    "errorOAuthCallback": "Authenticatie mislukt tijdens de callback-stap. Probeer het opnieuw.",
+    "errorOAuthSignin": "De authenticatieflow kon niet worden gestart. Probeer het opnieuw.",
+    "errorOAuthAccountNotLinked": "Dit account is niet gekoppeld aan een bestaande gebruiker. Gebruik de oorspronkelijke aanmeldmethode of neem contact op met support.",
+    "errorSessionRequired": "U moet ingelogd zijn om toegang te krijgen tot deze pagina.",
+    "errorCallbackRouteError": "De authenticatieprovider gaf een onverwacht antwoord. Probeer het opnieuw."
   },
   "wallet": {
     "qrInstructions": "Scan deze QR-code met uw wallet-app om te authenticeren.",

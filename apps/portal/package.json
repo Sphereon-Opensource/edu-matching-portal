@@ -15,8 +15,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@sphereon/theme-react": "file:../../../VDX-infra/vdx/edk/idk/lib/conf/theme/react/sphereon-theme-react-0.1.0.tgz",
-    "@sphereon/ui-react": "file:../../../VDX-infra/vdx/edk/idk/lib/ui/react/sphereon-ui-react-0.1.0.tgz",
+    "@sphereon/theme-react": "file:../../idk/lib/conf/theme/react",
+    "@sphereon/ui-react": "file:../../idk/lib/ui/react",
     "@tanstack/react-query": "^5.60.0",
     "clsx": "^2.1.0",
     "next": "^15.3.0",

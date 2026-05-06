@@ -150,7 +150,7 @@ class AuxiliaryDataServiceImplTest {
 
     @Test
     fun storeWithExpiry() = runTest {
-        val expiresAt = kotlinx.datetime.Clock.System.now()
+        val expiresAt = kotlin.time.Clock.System.now()
             .plus(kotlin.time.Duration.parse("1h"))
 
         val record = service.store(

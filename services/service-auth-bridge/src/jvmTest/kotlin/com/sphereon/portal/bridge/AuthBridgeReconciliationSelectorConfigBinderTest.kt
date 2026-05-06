@@ -1,8 +1,8 @@
 package com.sphereon.portal.bridge
 
 import com.sphereon.core.api.conf.PropertyResolver
-import com.sphereon.identity.idv.model.AttributeBag
-import com.sphereon.identity.idv.model.AttributePath
+import com.sphereon.attribute.flow.AttributeBag
+import com.sphereon.attribute.flow.AttributePath
 import com.sphereon.identity.idv.model.MatchOperator
 import com.sphereon.identity.reconciliation.model.BindingPolicy
 import com.sphereon.identity.reconciliation.model.FailClosed

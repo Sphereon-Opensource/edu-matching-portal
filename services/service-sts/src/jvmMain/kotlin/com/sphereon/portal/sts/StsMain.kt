@@ -51,6 +51,12 @@ fun main() {
         profile = profile
     )
 
+    // Register an ACTIVE OAuth2 signing key with the IDK SigningKeyStore so the JWKS
+    // endpoint actually publishes a verification key and downstream RPs can verify
+    // ID tokens. Without this the AS issues unverifiable tokens (NextAuth surfaces
+    // it as `error=Configuration` on the OIDC callback).
+    runBlocking { StsKeyInitializer.initialize(graph) }
+
     // Bootstrap OAuth2 clients from environment/defaults
     runBlocking { bootstrapClients(graph) }
 
@@ -89,19 +95,15 @@ fun Application.configureSts(graph: StsAppGraph) {
         allowMethod(HttpMethod.Options)
     }
 
-    // Security headers on all responses
-    install(createApplicationPlugin("SecurityHeaders") {
-        onCall { call ->
-            call.response.headers.apply {
-                append("X-Content-Type-Options", "nosniff")
-                append("X-Frame-Options", "DENY")
-                append("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-                append("Referrer-Policy", "strict-origin-when-cross-origin")
-                append("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-                append("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
-            }
-        }
-    })
+    // Security headers are applied by the IDK's per-response category-aware helper
+    // (com.sphereon.oauth2.server.authorization.impl.http.withSecurityHeaders, threaded through
+    // AbstractOAuth2HttpAdapter.withSecurityHeadersOnSuccess). Browser HTML pages that contain
+    // inline <style> / <script> opt-in to a per-request CSP nonce there. Adding a second,
+    // service-wide append() here resulted in duplicate `Content-Security-Policy` headers — the
+    // browser intersected the two policies, the strict service-wide one stripped the IDK's
+    // nonce permission, and the AS error page rendered unstyled. The IDK helper covers every
+    // route that goes through the universal HTTP adapter dispatch (i.e. all OAuth2 endpoints);
+    // /health and /ready are plain text and don't need browser-side defenses.
 
     install(StatusPages) {
         exception<Throwable> { call, cause ->
@@ -117,6 +119,7 @@ fun Application.configureSts(graph: StsAppGraph) {
     // Install IDK's Ktor plugin for request-scoped DI
     install(KotlinInjectPlugin) {
         appGraph = graph
+        tenantResolver = com.sphereon.ktor.server.inject.resolver.FixedTenantResolver("default")
     }
 
     routing {

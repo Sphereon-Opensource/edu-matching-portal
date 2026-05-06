@@ -4,7 +4,9 @@ import { env } from '@/lib/config/env'
 // GET /api/federation/providers — proxy to STS /federation/providers
 export async function GET() {
   try {
-    const res = await fetch(`${env.STS_ISSUER_URL}/federation/providers`, {
+    // Server-side fetch — use the docker-internal URL so the call works from inside the
+    // portal container without depending on the browser-facing issuer URL being reachable.
+    const res = await fetch(`${env.STS_INTERNAL_URL}/federation/providers`, {
       headers: { Accept: 'application/json' },
     })
 

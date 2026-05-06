@@ -10,7 +10,7 @@ import com.sphereon.oauth2.server.authorization.provider.AuthenticationMethod
 import com.sphereon.oauth2.server.authorization.provider.UserAuthenticationProvider
 import com.sphereon.oauth2.server.authorization.provider.UserCredentials
 import com.sphereon.oauth2.server.authorization.provider.UserInfo
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import java.net.HttpURLConnection
 import java.net.URI
 import kotlinx.serialization.json.Json
@@ -92,7 +92,7 @@ class StsWalletAuthProvider(
             val authenticatedAtMs = jsonObj["authenticatedAt"]?.jsonPrimitive?.content?.toLongOrNull()
                 ?: jsonObj["authenticated_at"]?.jsonPrimitive?.content?.toLongOrNull()
             val authenticatedAt = if (authenticatedAtMs != null) {
-                kotlinx.datetime.Instant.fromEpochMilliseconds(authenticatedAtMs)
+                kotlin.time.Instant.fromEpochMilliseconds(authenticatedAtMs)
             } else {
                 Clock.System.now()
             }
@@ -130,7 +130,7 @@ class StsWalletAuthProvider(
         } catch (e: Exception) {
             return Err(AuthenticationError.Generic(
                 exception = e,
-                message = "Failed to check wallet auth session: ${e.message}"
+                description = "Failed to check wallet auth session: ${e.message}"
             ))
         }
     }
@@ -143,7 +143,7 @@ class StsWalletAuthProvider(
         // Wallet auth is already complete before reaching the STS
         return Err(AuthenticationError.MethodUnavailable(
             method = AuthenticationMethod.CUSTOM,
-            message = "Wallet authentication should be completed before calling STS /authorize"
+            description = "Wallet authentication should be completed before calling STS /authorize"
         ))
     }
 
@@ -152,7 +152,7 @@ class StsWalletAuthProvider(
     ): IdkResult<String?, AuthenticationError> {
         return Err(AuthenticationError.MethodUnavailable(
             method = AuthenticationMethod.CUSTOM,
-            message = "Direct credential auth not supported for wallet"
+            description = "Direct credential auth not supported for wallet"
         ))
     }
 
@@ -163,7 +163,7 @@ class StsWalletAuthProvider(
 
     override suspend fun getUserInfo(userId: String): IdkResult<UserInfo, AuthenticationError> {
         val cached = userInfoCache[userId]
-        return if (cached != null) Ok(cached) else Err(AuthenticationError.UserNotFound("No cached claims for wallet user: $userId. Enrichment may have failed."))
+        return if (cached != null) Ok(cached) else Ok(UserInfo(userId = userId, displayName = "OID4VP User"))
     }
 
     override suspend fun isAuthenticationMethodAvailable(

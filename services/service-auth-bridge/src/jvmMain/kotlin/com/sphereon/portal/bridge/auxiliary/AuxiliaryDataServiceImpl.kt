@@ -1,7 +1,7 @@
 package com.sphereon.portal.bridge.auxiliary
 
 import com.sphereon.identity.matching.crypto.ReconciliationCryptoService
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement

@@ -2,7 +2,7 @@ package com.sphereon.portal.bridge.retention
 
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 

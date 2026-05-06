@@ -21,7 +21,13 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/portal
       DATABASE_USERNAME: portal
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
-      STS_ISSUER_URL: http://localhost:8092
+      STS_ISSUER_URL: ${STS_ISSUER_URL:-http://localhost:8092}
+      # Browser-facing issuer (above) is what RPs see in the iss claim and what's
+      # registered as a redirect URI with SURFconext. RPs running inside the docker
+      # network (e.g. the portal Next.js server) fetch the JWKS server-side, so the
+      # advertised jwks_uri must resolve from within the network — point it at the
+      # docker service DNS rather than localhost:8092.
+      STS_JWKS_URI: http://service-sts:8092/.well-known/jwks.json
       IDENTITY_ATTRIBUTE_RULES_FILE: config/identity-attribute-rules.yml
       FEDERATION_ISSUER_URL: ${SURF_ISSUER_URL:-https://connect.test.surfconext.nl}
       FEDERATION_CLIENT_ID: ${SURF_CLIENT_ID:-kw1c-surf.demo.sphereon.com}
@@ -29,13 +35,18 @@ services:
       # Override authorization endpoint only when using local Keycloak (leave empty for SURFconext)
       FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE: ${FEDERATION_AUTHORIZATION_ENDPOINT_OVERRIDE:-}
       AUTH_BRIDGE_BASE_URL: http://service-auth-bridge:8090
-      KEYCLOAK_ISSUER_URL: http://keycloak:8080/realms/portal
-      KEYCLOAK_ENABLED: "true"
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-http://keycloak:8080/realms/portal}
+      KEYCLOAK_ENABLED: "${KEYCLOAK_ENABLED:-true}"
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
-      KEYCLOAK_AUTHORIZATION_ENDPOINT_OVERRIDE: http://localhost:8083/realms/portal/protocol/openid-connect/auth
-      KEYCLOAK_TOKEN_ENDPOINT_OVERRIDE: http://keycloak:8080/realms/portal/protocol/openid-connect/token
-      KEYCLOAK_USERINFO_ENDPOINT_OVERRIDE: http://keycloak:8080/realms/portal/protocol/openid-connect/userinfo
-      OAUTH2_CLIENT_ALLOW_INSECURE_HTTP: "true"
+      KEYCLOAK_AUTHORIZATION_ENDPOINT_OVERRIDE: ${KEYCLOAK_AUTHORIZATION_ENDPOINT_OVERRIDE:-http://localhost:8083/realms/portal/protocol/openid-connect/auth}
+      KEYCLOAK_TOKEN_ENDPOINT_OVERRIDE: ${KEYCLOAK_TOKEN_ENDPOINT_OVERRIDE:-http://keycloak:8080/realms/portal/protocol/openid-connect/token}
+      KEYCLOAK_USERINFO_ENDPOINT_OVERRIDE: ${KEYCLOAK_USERINFO_ENDPOINT_OVERRIDE:-http://keycloak:8080/realms/portal/protocol/openid-connect/userinfo}
+      OAUTH2_CLIENT_ALLOW_INSECURE_HTTP: "${OAUTH2_CLIENT_ALLOW_INSECURE_HTTP:-true}"
+    volumes:
+      # PKCS12 keystore for the AS signing key (id_token / access_token signer). Persisting
+      # across restarts means the JWKS `kid` stays stable, so RPs that cache the JWKS keep
+      # verifying tokens issued before a restart.
+      - sts-keystore:/app/data/keystore
     depends_on:
       - postgres
 
@@ -51,14 +62,14 @@ services:
       DATABASE_USERNAME: portal
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
       STS_URL: http://service-sts:8092
-      STS_BASE_URL: http://localhost:8092
+      STS_BASE_URL: ${STS_BASE_URL:-http://localhost:8092}
       IDENTITY_ATTRIBUTE_RULES_FILE: config/identity-attribute-rules.yml
       HMAC_KEY_A: ${HMAC_KEY_A:-dev-hmac-key-a-change-in-production}
       HMAC_KEY_B: ${HMAC_KEY_B:-dev-hmac-key-b-change-in-production}
       RECONCILIATION_ISSUER_URL: ${SURF_ISSUER_URL:-https://connect.test.surfconext.nl}
       IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_ID: ${SURF_CLIENT_ID:-kw1c-surf.demo.sphereon.com}
       IDENTITY_RECONCILIATION_PROVIDERS_SURF_CLIENT_SECRET: ${SURF_CLIENT_SECRET:-dev-client-secret}
-      EXTERNAL_API_JWT_JWKS_URI: http://keycloak:8080/realms/portal/protocol/openid-connect/certs
+      EXTERNAL_API_JWT_JWKS_URI: ${EXTERNAL_API_JWT_JWKS_URI:-http://keycloak:8080/realms/portal/protocol/openid-connect/certs}
     volumes:
       - auth-bridge-keystore:/app/data/keystore
     depends_on:
@@ -86,16 +97,20 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      STS_ISSUER_URL: http://localhost:8092
+      STS_ISSUER_URL: ${STS_ISSUER_URL:-http://localhost:8092}
       STS_INTERNAL_URL: http://service-sts:8092
-      STS_CLIENT_ID: portal
+      STS_CLIENT_ID: ${STS_CLIENT_ID:-portal}
       STS_CLIENT_SECRET: ${STS_CLIENT_SECRET:-dev-client-secret}
       AUTH_BRIDGE_URL: http://service-auth-bridge:8090
       BLOB_SERVICE_URL: http://service-blobstore-camel:8081
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production}
       AUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production}
-      AUTH_TRUST_HOST: "true"
+      AUTH_TRUST_HOST: "${AUTH_TRUST_HOST:-true}"
+      # Surface the underlying Auth.js / oauth4webapi error context (which fetch URL
+      # failed, what the response said) instead of just the opaque "Configuration"
+      # redirect. Useful while wiring up an OIDC provider; flip off for prod.
+      AUTH_DEBUG: "${AUTH_DEBUG:-true}"
       NEXT_PUBLIC_APP_NAME: ${APP_NAME:-KW1C Portal}
       NEXT_PUBLIC_PRIMARY_COLOR: ${PRIMARY_COLOR:-#0085CA}
       NEXT_PUBLIC_SECONDARY_COLOR: ${SECONDARY_COLOR:-#EF2B2D}
@@ -110,3 +125,4 @@ volumes:
   pgdata:
   blobdata:
   auth-bridge-keystore:
+  sts-keystore:

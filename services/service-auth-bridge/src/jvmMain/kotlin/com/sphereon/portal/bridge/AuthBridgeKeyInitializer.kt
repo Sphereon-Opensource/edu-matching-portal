@@ -17,15 +17,11 @@ import com.sphereon.crypto.core.generic.ManagedKeyPair
 import com.sphereon.crypto.core.kms.KeyManagerService
 import com.sphereon.crypto.core.kms.asKeyManagerServiceGraph
 import com.sphereon.did.methods.jwk.JwkDidProviderImpl
-import com.sphereon.oauth2.common.model.ClientRegistration
-import com.sphereon.oauth2.common.model.ClientType
-import com.sphereon.oauth2.common.model.GrantType
-import com.sphereon.oauth2.common.model.ResponseType
 import com.sphereon.openid.oid4vp.common.ClientMetadata
 import com.sphereon.openid.oid4vp.verifier.impl.Oid4VpVerifierServiceImpl
 import com.sphereon.openid.oid4vp.verifier.model.ClientMetadataConfiguration
 import dev.whyoleg.cryptography.random.CryptographyRandom
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -285,14 +281,7 @@ object AuthBridgeKeyInitializer {
             clientId = clientId,
             name = "Portal Auth Bridge",
             clientMetadata = ClientMetadata(
-                baseMetadata = ClientRegistration(
-                    clientId = clientId,
-                    clientName = "Portal Auth Bridge",
-                    clientType = ClientType.CONFIDENTIAL,
-                    grantTypes = listOf(GrantType.AUTHORIZATION_CODE),
-                    responseTypes = listOf(ResponseType.CODE),
-                    jwks = JwkSet(keys = arrayOf(publicJwk))
-                )
+                jwks = JwkSet(keys = arrayOf(publicJwk)),
             ),
             createdAt = now,
             updatedAt = now

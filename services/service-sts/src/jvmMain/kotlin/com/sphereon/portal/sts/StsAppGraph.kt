@@ -3,6 +3,7 @@ package com.sphereon.portal.sts
 import com.sphereon.core.defaults.app.DefaultRootScopeProvider
 import com.sphereon.di.app.AbstractAppGraph
 import com.sphereon.di.app.RootScopeProvider
+import com.sphereon.oauth2.server.authorization.storage.SigningKeyStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -19,6 +20,13 @@ import dev.zacsweers.metro.createGraphFactory
  */
 @DependencyGraph(AppScope::class)
 abstract class StsAppGraph : AbstractAppGraph() {
+    /**
+     * The IDK's per-tenant durable registry of OAuth2 AS signing keys. Exposed so the
+     * boot path ([StsKeyInitializer]) can register an ACTIVE id_token / access_token
+     * signer at startup — without this the JWKS endpoint publishes an empty key set
+     * and ID-token verification at the RP fails with `Configuration` errors.
+     */
+    abstract val signingKeyStore: SigningKeyStore
 
     @DependencyGraph.Factory
     fun interface Factory {

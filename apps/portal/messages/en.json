@@ -42,7 +42,15 @@
     "stsUnavailable": "The authentication service (STS) is currently unavailable. Please try again later or contact support.",
     "authBridgeUnavailable": "The wallet service is currently unavailable. Please try again later or contact support.",
     "tabReconciliation": "Account Linking",
-    "tabCompleting": "Completing..."
+    "tabCompleting": "Completing...",
+    "errorConfiguration": "Authentication failed: a problem with the authentication provider configuration. Please retry; if the issue persists, contact support.",
+    "errorAccessDenied": "Access denied. You declined to authorize, or the authentication provider rejected the request.",
+    "errorVerification": "Authentication failed: the verification token is invalid or expired. Please retry.",
+    "errorOAuthCallback": "Authentication failed during the callback step. Please retry.",
+    "errorOAuthSignin": "Could not start the authentication flow. Please retry.",
+    "errorOAuthAccountNotLinked": "This account isn't linked to an existing user. Please use the original sign-in method or contact support.",
+    "errorSessionRequired": "You need to be signed in to access that page.",
+    "errorCallbackRouteError": "The authentication provider returned an unexpected response. Please retry."
   },
   "wallet": {
     "qrInstructions": "Scan this QR code with your wallet app to authenticate.",

@@ -51,7 +51,7 @@ class KeyMigrationJob(
             version = targetVersion,
             operations = operationsStr,
             status = MigrationStatus.RUNNING,
-            startedAt = kotlinx.datetime.Clock.System.now(),
+            startedAt = kotlin.time.Clock.System.now(),
             configSnapshot = buildConfigSnapshot(),
         )
         historyStore.insert(startRecord)

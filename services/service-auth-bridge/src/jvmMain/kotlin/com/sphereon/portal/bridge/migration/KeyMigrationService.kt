@@ -7,7 +7,7 @@ import com.sphereon.identity.matching.store.IdentityLinkBindingStore
 import com.sphereon.identity.matching.store.IdentityMatchStore
 import com.sphereon.portal.bridge.auxiliary.AuxiliaryDataService
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 

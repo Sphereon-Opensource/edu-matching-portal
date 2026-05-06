@@ -21,8 +21,8 @@ import com.sphereon.core.api.IdkResult
 import com.sphereon.core.api.Ok
 import com.sphereon.core.api.error.IdkError
 import com.sphereon.core.api.http.HttpJson
-import com.sphereon.identity.idv.model.AttributeBag
-import com.sphereon.identity.idv.model.AttributePath
+import com.sphereon.attribute.flow.AttributeBag
+import com.sphereon.attribute.flow.AttributePath
 import com.sphereon.identity.matching.crypto.ReconciliationCryptoService
 import com.sphereon.identity.matching.model.AssuranceSummary
 import com.sphereon.identity.matching.model.IdentifierType
@@ -70,7 +70,7 @@ import com.sphereon.identity.reconciliation.model.ReconciliationMaterialProfile
 import com.sphereon.identity.reconciliation.model.ReconciliationPlan
 import com.sphereon.portal.bridge.WalletAttributeMappings
 import com.sphereon.openid.oid4vp.auth.model.ReconciliationPlanType
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

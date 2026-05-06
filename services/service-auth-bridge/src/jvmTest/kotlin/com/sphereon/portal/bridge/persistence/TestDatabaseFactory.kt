@@ -28,6 +28,7 @@ fun createTestDatabase(driver: SqlDriver): AuthBridgeDatabase {
             updated_atAdapter = InstantColumnAdapter,
             last_used_atAdapter = InstantColumnAdapter,
             deleted_atAdapter = InstantColumnAdapter,
+            reconcile_timeAdapter = InstantColumnAdapter,
         ),
         reconciliation_sessionAdapter = Reconciliation_session.Adapter(
             created_atAdapter = InstantColumnAdapter,

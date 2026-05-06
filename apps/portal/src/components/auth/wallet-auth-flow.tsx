@@ -87,7 +87,23 @@ export function WalletAuthFlow({ onBack, resumeSessionId, forceReconciliation, o
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '32px' }}
         data-testid="wallet-auth-error"
       >
-        <p>{state.message}</p>
+        <div
+          role="alert"
+          style={{
+            color: 'var(--color-error, #d32f2f)',
+            background: 'color-mix(in srgb, var(--color-error, #d32f2f) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-error, #d32f2f) 30%, transparent)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            maxWidth: '520px',
+            textAlign: 'left',
+            fontSize: '0.9rem',
+            lineHeight: 1.4,
+            wordBreak: 'break-word',
+          }}
+        >
+          {state.message}
+        </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {state.retryable && (
             <Button variant="secondary" onClick={handleRetry}>

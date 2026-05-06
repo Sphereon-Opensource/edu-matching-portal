@@ -1,6 +1,8 @@
 package com.sphereon.portal.bridge.external
 
+import com.sphereon.core.api.auth.AuthHeaders
 import com.sphereon.core.api.http.GenericHttpRequest
+import com.sphereon.core.api.http.util.RequestUtils
 import com.sphereon.identity.matching.crypto.ReconciliationCryptoService
 import com.sphereon.identity.matching.model.IdentityLinkBinding
 import com.sphereon.oauth2.jwt.validation.JwtValidationService
@@ -41,7 +43,7 @@ class ExternalApiAuthService(
      * Returns [ExternalApiAuthResult] on success, or an error pair (statusCode, errorBody) on failure.
      */
     suspend fun authenticate(request: GenericHttpRequest): Result<ExternalApiAuthResult> {
-        val authHeader = request.headers["Authorization"]
+        val authHeader = RequestUtils.extractHeaderValue(request.headers, AuthHeaders.AUTHORIZATION)
             ?: return Result.failure(AuthError(401, "unauthorized", "Bearer token required"))
 
         if (!authHeader.startsWith("Bearer ", ignoreCase = true)) {

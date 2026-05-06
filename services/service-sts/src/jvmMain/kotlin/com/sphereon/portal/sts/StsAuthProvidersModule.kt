@@ -1,60 +1,127 @@
 package com.sphereon.portal.sts
 
 import com.sphereon.core.api.conf.ConfigLevel
+import com.sphereon.core.api.conf.PropertyResolver
 import com.sphereon.core.api.context.SessionExecution
 import com.sphereon.di.session.SessionScope
-import com.sphereon.oauth2.client.client.OAuth2Client
-import com.sphereon.oauth2.common.token.OidcTokenClaimExtractor
 import com.sphereon.oauth2.server.authorization.config.FederationProviderConfig
 import com.sphereon.oauth2.server.authorization.impl.config.FederationProviderConfigBinder
 import com.sphereon.oauth2.server.authorization.impl.provider.CompositeUserAuthenticationProvider
 import com.sphereon.oauth2.server.authorization.impl.provider.FederatedUserAuthenticationProvider
-import com.sphereon.oauth2.server.authorization.impl.provider.NoOpUserAuthenticationProviderModule
+import com.sphereon.oauth2.server.authorization.impl.provider.NoOpReconciliationCallbackHandler
+import com.sphereon.oauth2.server.authorization.impl.provider.DefaultEmptyFederationProviderRegistry
+import com.sphereon.oauth2.server.authorization.impl.provider.IdentityFederatedClaimMapper
 import com.sphereon.oauth2.server.authorization.impl.provider.ReconciliationCallbackHandler
+import com.sphereon.oauth2.server.authorization.provider.FederatedClaimMapper
+import com.sphereon.oauth2.server.authorization.provider.FederationProviderRegistry
 import com.sphereon.oauth2.server.authorization.provider.UserAuthenticationProvider
-import dev.zacsweers.metro.ContributesTo
-import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.StringKey
+import dev.zacsweers.metro.binding
 
 /**
- * STS-specific DI module that wires up both federated and wallet authentication.
+ * STS-specific DI bindings that wire up both federated and wallet authentication.
  *
- * Provides a [CompositeUserAuthenticationProvider] that routes:
- * - Federation (OIDC) requests to [FederatedUserAuthenticationProvider]
- * - Wallet (OID4VP) requests to [StsWalletAuthProvider] (HTTP-based, calls auth bridge)
- *   when login_hint starts with "oid4vp:"
- *
- * The federation provider supports multiple upstream OIDC providers (e.g., SURFconext,
- * Keycloak) configured via `{namespace}.federation.providers.*`. Both federation login
- * and reconciliation (IDV) flows are handled by the same provider — the flow type is
- * determined by the [FlowContext] stored in the pending federation state.
+ * Contributions in this file:
+ * - [StsCompositeUserAuthenticationProvider] — registers the composite under the
+ *   `UserAuthenticationProvider` multibinding key `"composite"`. Selected by the IDK delegate
+ *   when `oauth2.user-provider.mode=composite`. The composite routes:
+ *   - `login_hint=oid4vp:{sessionId}` to [StsWalletAuthProvider] (HTTP-based, calls auth bridge)
+ *   - everything else to [FederatedUserAuthenticationProvider] (OIDC RP flow)
+ * - [StsFederationProviderRegistry] — replaces the IDK empty default with a config-driven
+ *   registry over `{namespace}.federation.providers.*` (and `FEDERATION_*` / `KEYCLOAK_*`
+ *   environment fallbacks for local development).
+ * - [StsFederatedClaimMapper] — replaces the IDK pass-through mapper with the STS canonical
+ *   projection: extract upstream-specific keys, validate required attributes, and project
+ *   the `project=true` subset plus reconciliation metadata.
+ * - [StsReconciliationCallbackHandler] — replaces the IDK no-op handler so reconciliation
+ *   completions can be forwarded to the auth-bridge.
  *
  * Federation attributes are:
  * 1. Extracted from upstream IdP using provider-specific extraction mappings
  * 2. Mapped to canonical names
  * 3. Projected using shared canonical attribute rules (project=true attributes only)
- *
- * Replaces the default no-op user-auth provider module.
  */
-@ContributesTo(SessionScope::class, replaces = [NoOpUserAuthenticationProviderModule::class])
-interface StsAuthProvidersModule {
 
-    @Provides
-    @SingleIn(SessionScope::class)
-    fun federationProviderConfigs(
-        execution: SessionExecution
-    ): Map<String, FederationProviderConfig> {
-        // Try config service first (APP level), fall back to environment variables
+/**
+ * Composite [UserAuthenticationProvider] keyed `"composite"` in the IDK provider multibinding.
+ * Delegates to a [CompositeUserAuthenticationProvider] wrapping the IDK federated provider and
+ * the STS wallet HTTP provider. Selected by the IDK delegate when
+ * `oauth2.user-provider.mode=composite`.
+ */
+@Inject
+@SingleIn(SessionScope::class)
+@ContributesIntoMap(SessionScope::class, binding = binding<UserAuthenticationProvider>())
+@StringKey("composite")
+class StsCompositeUserAuthenticationProvider(
+    federatedProvider: FederatedUserAuthenticationProvider,
+    execution: SessionExecution,
+) : UserAuthenticationProvider by CompositeUserAuthenticationProvider(
+    federationProvider = federatedProvider,
+    walletProvider = buildWalletProvider(execution),
+) {
+    companion object {
+        private fun buildWalletProvider(execution: SessionExecution): UserAuthenticationProvider {
+            val configService = execution.conf.conf(ConfigLevel.APP)
+            val authBridgeUrl = System.getenv("AUTH_BRIDGE_BASE_URL")
+                ?: configService.getPropertyAsString(
+                    "oid4vp.auth-bridge.base-url",
+                    "http://localhost:8090"
+                ) ?: "http://localhost:8090"
+            println("[STS] Auth bridge URL: $authBridgeUrl")
+
+            val walletSubjectClaimName = configService.getPropertyAsString(
+                "oid4vp.auth-bridge.user-identifier-claim-path", "sub"
+            ) ?: "sub"
+            return StsWalletAuthProvider(
+                authBridgeBaseUrl = authBridgeUrl,
+                walletSubjectClaimName = walletSubjectClaimName,
+            )
+        }
+    }
+}
+
+/**
+ * Config-driven [FederationProviderRegistry] for the STS. Reads provider definitions from the
+ * `{namespace}.federation.providers.*` config tree first, then falls back to `FEDERATION_*` and
+ * `KEYCLOAK_*` environment variables for local development.
+ *
+ * Replaces [DefaultEmptyFederationProviderRegistry] so federation actually works in the STS.
+ */
+@Inject
+@SingleIn(SessionScope::class)
+@ContributesBinding(
+    SessionScope::class,
+    binding = binding<FederationProviderRegistry>(),
+    replaces = [DefaultEmptyFederationProviderRegistry::class],
+)
+class StsFederationProviderRegistry(
+    private val execution: SessionExecution,
+) : FederationProviderRegistry {
+
+    private val resolved: List<FederationProviderConfig> by lazy { resolveProviders() }
+    private val byId: Map<String, FederationProviderConfig> by lazy { resolved.associateBy { it.id } }
+
+    override fun findById(providerId: String): FederationProviderConfig? = byId[providerId]
+
+    override fun all(): List<FederationProviderConfig> = resolved
+
+    override fun defaultProviderId(): String? = resolved.firstOrNull { it.enabled }?.id
+
+    private fun resolveProviders(): List<FederationProviderConfig> {
         val configService = execution.conf.conf(ConfigLevel.APP)
         val namespace = (configService as? com.sphereon.core.api.conf.ConfigService)?.getNamespace() ?: "unknown"
         val testProp = configService.getPropertyAsString("$namespace.federation.providers.names", null)
         println("[STS-DEBUG] ConfigService class=${configService::class.simpleName}, namespace=$namespace, federation.providers.names=$testProp")
         val configs = FederationProviderConfigBinder(configService).bind()
         if (configs.isNotEmpty()) {
-            return configs.associateBy { it.id }
+            return configs
         }
 
-        // Fallback: construct from environment variables directly
+        // Fallback: construct from environment variables directly (local development convenience).
         val providers = mutableListOf<FederationProviderConfig>()
 
         val surfIssuer = System.getenv("FEDERATION_ISSUER_URL")
@@ -96,93 +163,55 @@ interface StsAuthProvidersModule {
         if (providers.isEmpty()) {
             error("No federation providers configured. Set FEDERATION_ISSUER_URL/FEDERATION_CLIENT_ID or configure sphereon.app.federation.providers.* properties.")
         }
-        return providers.associateBy { it.id }
+        return providers
+    }
+}
+
+/**
+ * STS canonical projection [FederatedClaimMapper]. Extracts upstream claims using
+ * provider-specific source mappings, validates required canonical attributes, projects only the
+ * `project=true` subset, and injects reconciliation metadata.
+ *
+ * Replaces [IdentityFederatedClaimMapper] so claims arriving in downstream commands are already
+ * normalised to the STS canonical vocabulary.
+ */
+@Inject
+@SingleIn(SessionScope::class)
+@ContributesBinding(
+    SessionScope::class,
+    binding = binding<FederatedClaimMapper>(),
+    replaces = [IdentityFederatedClaimMapper::class],
+)
+class StsFederatedClaimMapper(
+    private val execution: SessionExecution,
+    private val providerRegistry: FederationProviderRegistry,
+) : FederatedClaimMapper {
+
+    private val configService: PropertyResolver
+        get() = execution.conf.conf(ConfigLevel.APP)
+
+    private val ruleVersion: String by lazy {
+        configService.getPropertyAsString("identity.reconciliation.rule-version", null) ?: "unknown"
     }
 
-    @Provides
-    @SingleIn(SessionScope::class)
-    fun federatedUserAuthenticationProvider(
-        oauth2Client: OAuth2Client,
-        providerConfigs: Map<String, FederationProviderConfig>,
-        tokenClaimExtractor: OidcTokenClaimExtractor,
-        execution: SessionExecution
-    ): FederatedUserAuthenticationProvider {
-        val configService = execution.conf.conf(ConfigLevel.APP)
-
-        // Determine default provider (first enabled)
-        val defaultProviderId = providerConfigs.values.firstOrNull { it.enabled }?.id
-            ?: error("No enabled federation provider found")
-
-        // Load canonical attribute rules from config and derive per-provider extraction mappings
-        val knownProviderIds = providerConfigs.keys
-        val canonicalRules = StsCanonicalAttributeRulesConfigBinder.bind(configService, knownProviderIds)
-        val extractionMappings = StsCanonicalAttributeRulesConfigBinder.deriveExtractionMappings(
-            canonicalRules, defaultProviderId
-        )
-
-        // Read reconciliation rule version from config
-        val ruleVersion = configService.getPropertyAsString(
-            "identity.reconciliation.rule-version", null
-        ) ?: "unknown"
-
-        // Build attribute mapper: extract -> canonicalize -> validate -> project + STS metadata
-        val claimMapper: ((Map<String, Any>) -> Map<String, Any>)? =
-            if (extractionMappings.isNotEmpty()) {
-                { rawClaims ->
-                    val projected = applyCanonicalProjection(rawClaims, extractionMappings, canonicalRules)
-                    // Inject STS reconciliation metadata into projected claims
-                    projected + mapOf(
-                        "reconcile_rule_version" to ruleVersion,
-                        "reconcile_time" to kotlinx.datetime.Clock.System.now().toString()
-                    )
-                }
-            } else null
-
-        // Build reconciliation handler (STS → auth-bridge claims POST)
-        val authBridgeUrl = System.getenv("AUTH_BRIDGE_BASE_URL")
-            ?: configService.getPropertyAsString(
-                "oid4vp.auth-bridge.base-url",
-                "http://localhost:8090"
-            ) ?: "http://localhost:8090"
-        val frontendUrl = System.getenv("FRONTEND_URL")
-            ?: configService.getPropertyAsString(
-                "reconciliation.frontend-url",
-                "http://localhost:3000"
-            ) ?: "http://localhost:3000"
-
-        val reconciliationHandler = StsReconciliationHandler(authBridgeUrl, frontendUrl)
-
-        return FederatedUserAuthenticationProvider(
-            oauth2Client = oauth2Client,
-            providers = providerConfigs,
-            defaultProviderId = defaultProviderId,
-            tokenClaimExtractor = tokenClaimExtractor,
-            claimMapper = claimMapper,
-            reconciliationHandler = reconciliationHandler,
-        )
+    private val canonicalRules: List<StsCanonicalAttributeRule> by lazy {
+        val knownProviderIds = providerRegistry.all().map { it.id }.toSet()
+        StsCanonicalAttributeRulesConfigBinder.bind(configService, knownProviderIds)
     }
 
-    @Provides
-    @SingleIn(SessionScope::class)
-    fun provideUserAuthenticationProvider(
-        federatedProvider: FederatedUserAuthenticationProvider,
-        execution: SessionExecution
-    ): UserAuthenticationProvider {
-        val configService = execution.conf.conf(ConfigLevel.APP)
-        val authBridgeUrl = System.getenv("AUTH_BRIDGE_BASE_URL")
-            ?: configService.getPropertyAsString(
-                "oid4vp.auth-bridge.base-url",
-                "http://localhost:8090"
-            ) ?: "http://localhost:8090"
-        println("[STS] Auth bridge URL: $authBridgeUrl")
+    private val extractionMappings: List<FederationExtractionMapping> by lazy {
+        val defaultProviderId = providerRegistry.defaultProviderId() ?: return@lazy emptyList()
+        StsCanonicalAttributeRulesConfigBinder.deriveExtractionMappings(canonicalRules, defaultProviderId)
+    }
 
-        val walletSubjectClaimName = configService.getPropertyAsString(
-            "oid4vp.auth-bridge.user-identifier-claim-path", "sub"
-        ) ?: "sub"
-        val walletProvider = StsWalletAuthProvider(authBridgeUrl, walletSubjectClaimName = walletSubjectClaimName)
-        return CompositeUserAuthenticationProvider(
-            federationProvider = federatedProvider,
-            walletProvider = walletProvider
+    override fun map(rawClaims: Map<String, Any>): Map<String, Any> {
+        if (extractionMappings.isEmpty()) {
+            return rawClaims
+        }
+        val projected = applyCanonicalProjection(rawClaims, extractionMappings, canonicalRules)
+        return projected + mapOf(
+            "reconcile_rule_version" to ruleVersion,
+            "reconcile_time" to kotlin.time.Clock.System.now().toString(),
         )
     }
 
@@ -208,7 +237,7 @@ interface StsAuthProvidersModule {
                 }
             }
 
-            // Step 2: Validate required canonical attributes -- fail closed on missing
+            // Step 2: Validate required canonical attributes — fail closed on missing
             val missingRequired = canonicalRules
                 .filter { it.required && !canonicalAttributes.containsKey(it.canonicalName) }
                 .map { it.canonicalName }
@@ -221,4 +250,44 @@ interface StsAuthProvidersModule {
             return canonicalAttributes.filterKeys { it in projectableNames }
         }
     }
+}
+
+/**
+ * STS [ReconciliationCallbackHandler] that forwards reconciliation completions to the auth-bridge
+ * over HTTP. Wraps [StsReconciliationHandler] so the URLs are resolved per-session from config.
+ *
+ * Replaces [NoOpReconciliationCallbackHandler] so reconciliation flows actually complete in the STS.
+ */
+@Inject
+@SingleIn(SessionScope::class)
+@ContributesBinding(
+    SessionScope::class,
+    binding = binding<ReconciliationCallbackHandler>(),
+    replaces = [NoOpReconciliationCallbackHandler::class],
+)
+class StsReconciliationCallbackHandler(
+    private val execution: SessionExecution,
+) : ReconciliationCallbackHandler {
+
+    private val delegate: StsReconciliationHandler by lazy {
+        val configService = execution.conf.conf(ConfigLevel.APP)
+        val authBridgeUrl = System.getenv("AUTH_BRIDGE_BASE_URL")
+            ?: configService.getPropertyAsString(
+                "oid4vp.auth-bridge.base-url",
+                "http://localhost:8090"
+            ) ?: "http://localhost:8090"
+        val frontendUrl = System.getenv("FRONTEND_URL")
+            ?: configService.getPropertyAsString(
+                "reconciliation.frontend-url",
+                "http://localhost:3000"
+            ) ?: "http://localhost:3000"
+        StsReconciliationHandler(authBridgeUrl, frontendUrl)
+    }
+
+    override suspend fun onReconciliationComplete(
+        claims: Map<String, Any>,
+        providerId: String,
+        issuer: String,
+        oid4vpSessionId: String,
+    ): String = delegate.onReconciliationComplete(claims, providerId, issuer, oid4vpSessionId)
 }

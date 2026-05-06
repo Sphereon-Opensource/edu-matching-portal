@@ -16,4 +16,11 @@
 **/gradlew
 **/gradlew.bat
 idk
+# Re-include the built SDK packages needed by portal
+!idk/lib/conf/theme/react/package.json
+!idk/lib/conf/theme/react/dist
+!idk/lib/conf/theme/react/src
+!idk/lib/ui/react/package.json
+!idk/lib/ui/react/dist
+!idk/lib/ui/react/src
 data/*/build

@@ -17,7 +17,7 @@ import com.sphereon.portal.bridge.persistence.createTestDatabase
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterAll

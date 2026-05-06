@@ -37,7 +37,10 @@ export interface CanonicalClaim {
 export interface SessionStatusResponse {
   sessionId: string
   status: SessionStatus
+  /** Informational text for in-progress statuses (IDV, reconciling). */
   message?: string
+  /** Failure detail set by the auth-bridge when status is ERROR/FAILED/EXPIRED. */
+  errorMessage?: string
   mappedClaims?: Record<string, string | CanonicalClaim>
   idvSteps?: IdvStep[]
   idvMethod?: string

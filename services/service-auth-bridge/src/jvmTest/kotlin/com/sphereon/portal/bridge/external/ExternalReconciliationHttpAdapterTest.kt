@@ -25,7 +25,7 @@ import com.sphereon.portal.bridge.persistence.createTestDatabase
 import com.sphereon.core.api.http.GenericHttpBody
 import com.sphereon.core.api.http.GenericHttpRequest
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.AfterAll
@@ -126,7 +126,6 @@ class ExternalReconciliationHttpAdapterTest {
                 issuedAt = 0,
                 notBefore = null,
                 scopes = scope.split(" ", ",").filter { it.isNotEmpty() }.toSet(),
-                tenantId = null,
                 clientId = clientId,
                 jwtId = null,
                 rawToken = token,

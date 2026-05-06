@@ -95,6 +95,10 @@ export function useWalletAuth() {
       if (!res.ok) throw new Error('Failed to poll status')
       const data = await res.json()
 
+      // Auth-bridge surfaces failure text as `errorMessage`; `message` is used for
+      // informational status (e.g. IDV/reconciling progress). Prefer the actual
+      // backend message over a hard-coded fallback so the UI doesn't mask real errors.
+      const backendError = data.errorMessage || data.message
       switch (data.status) {
         case 'VERIFIED':
         case 'COMPLETED':
@@ -120,13 +124,23 @@ export function useWalletAuth() {
         case 'FAILED':
           dispatch({
             type: 'ERROR',
-            message: data.message || 'Reconciliation failed',
+            message: backendError || 'Reconciliation failed',
             retryable: false,
           })
           break
         case 'ERROR':
+          dispatch({
+            type: 'ERROR',
+            message: backendError || 'Wallet authentication failed',
+            retryable: true,
+          })
+          break
         case 'EXPIRED':
-          dispatch({ type: 'ERROR', message: data.message || 'Session expired', retryable: true })
+          dispatch({
+            type: 'ERROR',
+            message: backendError || 'Session expired',
+            retryable: true,
+          })
           break
         // CREATED, PENDING, INTERACTION_STARTED: keep polling
       }

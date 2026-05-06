@@ -5,7 +5,7 @@ import com.sphereon.identity.matching.store.IdentityMatchStore
 import com.sphereon.portal.bridge.audit.AuditEventStore
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 

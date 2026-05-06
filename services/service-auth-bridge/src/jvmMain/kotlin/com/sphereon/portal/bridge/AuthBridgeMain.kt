@@ -200,8 +200,10 @@ fun Application.configureAuthBridge(
         }
     }
 
+
     install(KotlinInjectPlugin) {
         appGraph = graph
+        tenantResolver = com.sphereon.ktor.server.inject.resolver.FixedTenantResolver("default")
     }
 
     routing {
@@ -264,3 +266,4 @@ fun Application.configureAuthBridge(
         }
     }
 }
+

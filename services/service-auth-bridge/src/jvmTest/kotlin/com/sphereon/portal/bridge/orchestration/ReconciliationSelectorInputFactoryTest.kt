@@ -6,7 +6,7 @@ import com.sphereon.openid.oid4vp.auth.model.Oid4vpAuthSessionStatus
 import com.sphereon.openid.oid4vp.universal.VerifiedClaimsValue
 import com.sphereon.openid.oid4vp.universal.VerifiedData
 import com.sphereon.portal.bridge.WalletAttributeMappings
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -71,10 +71,10 @@ class ReconciliationSelectorInputFactoryTest {
         assertEquals("sts", input.requestedProjection)
 
         val attributes = input.availableAttributes?.attributes.orEmpty()
-        assertEquals(JsonPrimitive("Ada"), attributes[com.sphereon.identity.idv.model.AttributePath("firstName")])
-        assertEquals(JsonPrimitive("Ada"), attributes[com.sphereon.identity.idv.model.AttributePath("given_name")])
-        assertEquals(JsonPrimitive("ada@example.com"), attributes[com.sphereon.identity.idv.model.AttributePath("emailAddress")])
-        assertEquals(JsonPrimitive("ada@example.com"), attributes[com.sphereon.identity.idv.model.AttributePath("email")])
+        assertEquals(JsonPrimitive("Ada"), attributes[com.sphereon.attribute.flow.AttributePath("firstName")])
+        assertEquals(JsonPrimitive("Ada"), attributes[com.sphereon.attribute.flow.AttributePath("given_name")])
+        assertEquals(JsonPrimitive("ada@example.com"), attributes[com.sphereon.attribute.flow.AttributePath("emailAddress")])
+        assertEquals(JsonPrimitive("ada@example.com"), attributes[com.sphereon.attribute.flow.AttributePath("email")])
     }
 
     @Test

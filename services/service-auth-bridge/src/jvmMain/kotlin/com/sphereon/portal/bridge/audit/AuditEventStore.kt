@@ -1,7 +1,7 @@
 package com.sphereon.portal.bridge.audit
 
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 

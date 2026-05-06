@@ -13,7 +13,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 private val jsonHeaders = mapOf("Content-Type" to "application/json")
 

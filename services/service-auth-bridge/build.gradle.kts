@@ -45,6 +45,9 @@ kotlin {
                 implementation(libs.sphereon.core.api.public)
                 implementation(libs.sphereon.core.api.default)
 
+                // YAML application.yml loader (contributes YamlAppPropertySourceContribution)
+                implementation("com.sphereon.idk:lib-conf-yaml:${libs.versions.sphereon.idk.get()}")
+
                 // IDK Core Events (EventHub DI binding)
                 implementation("com.sphereon.idk:lib-core-events-public:${libs.versions.sphereon.idk.get()}")
                 implementation("com.sphereon.idk:lib-core-events-impl:${libs.versions.sphereon.idk.get()}")
@@ -99,6 +102,25 @@ kotlin {
 
                 // OID4VP Universal API (needed for Metro to discover @ContributesIntoSet HttpAdapter)
                 implementation("com.sphereon.idk:lib-openid-oid4vp-universal-impl:${libs.versions.sphereon.idk.get()}")
+
+                // OID4VP Verifier REST adapter (mounts /oid4vp/backend/auth/requests etc.)
+                implementation("com.sphereon.idk:services-oid4vp-verifier-rest:${libs.versions.sphereon.idk.get()}")
+
+                // mdoc core (MdocValidations, DeviceAuthValidation, DeviceResponseCborCodec)
+                // required by oid4vp VerifyHolderBindingCommandImpl
+                implementation("com.sphereon.idk:lib-mdoc-core-public:${libs.versions.sphereon.idk.get()}")
+                implementation("com.sphereon.idk:lib-mdoc-core-impl:${libs.versions.sphereon.idk.get()}")
+
+                // CBOR (transitively required by mdoc impl: CborParser, CborSerializer, etc.)
+                implementation("com.sphereon.idk:lib-cbor-public:${libs.versions.sphereon.idk.get()}")
+                implementation("com.sphereon.idk:lib-cbor-impl:${libs.versions.sphereon.idk.get()}")
+
+                // X509 trust anchor loader (required by oid4vp VerifyHolderBindingCommandImpl)
+                implementation("com.sphereon.idk:lib-trust-x509:${libs.versions.sphereon.idk.get()}")
+
+                // Trust core (DefaultTrustConfigProvider, etc.) needed by lib-trust-x509
+                implementation("com.sphereon.idk:lib-trust-core-public:${libs.versions.sphereon.idk.get()}")
+                implementation("com.sphereon.idk:lib-trust-core-impl:${libs.versions.sphereon.idk.get()}")
 
                 // DI
                 implementation(libs.bundles.app.platform.di)

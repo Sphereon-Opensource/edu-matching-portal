@@ -17,6 +17,13 @@ kotlin {
                 api(libs.sphereon.oauth2.server.authorization.public)
                 implementation(libs.sphereon.oauth2.server.authorization.impl)
 
+                // OAuth2 Authorization Server REST adapter (mounts /.well-known, /authorize, /token, etc.)
+                implementation("com.sphereon.idk:services-oauth2-as-rest:${libs.versions.sphereon.idk.get()}")
+
+                // OAuth2 Resource Server impl (ValidateAccessTokenCommand binding required by AS REST)
+                implementation("com.sphereon.idk:lib-oauth2-server-resource-public:${libs.versions.sphereon.idk.get()}")
+                implementation("com.sphereon.idk:lib-oauth2-server-resource-impl:${libs.versions.sphereon.idk.get()}")
+
                 // IDK OAuth2 Client (upstream OIDC RP for federation)
                 api("com.sphereon.idk:lib-oauth2-client-public:${libs.versions.sphereon.idk.get()}")
                 implementation("com.sphereon.idk:lib-oauth2-client-impl:${libs.versions.sphereon.idk.get()}")
@@ -31,6 +38,13 @@ kotlin {
                 // IDK Core
                 implementation(libs.sphereon.core.api.public)
                 implementation(libs.sphereon.core.api.default)
+
+                // YAML application.yml loader (contributes YamlAppPropertySourceContribution)
+                implementation("com.sphereon.idk:lib-conf-yaml:${libs.versions.sphereon.idk.get()}")
+
+                // IDK Core Events (EventHub DI binding consumed by IDK audit-logging plumbing)
+                implementation("com.sphereon.idk:lib-core-events-public:${libs.versions.sphereon.idk.get()}")
+                implementation("com.sphereon.idk:lib-core-events-impl:${libs.versions.sphereon.idk.get()}")
 
                 // IDK Crypto (needed for JWT signing — ID tokens, access tokens)
                 api("com.sphereon.idk:lib-crypto-core-public:${libs.versions.sphereon.idk.get()}")

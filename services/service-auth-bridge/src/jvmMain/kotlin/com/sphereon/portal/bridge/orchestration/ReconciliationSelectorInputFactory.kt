@@ -1,7 +1,7 @@
 package com.sphereon.portal.bridge.orchestration
 
-import com.sphereon.identity.idv.model.AttributeBag
-import com.sphereon.identity.idv.model.AttributePath
+import com.sphereon.attribute.flow.AttributeBag
+import com.sphereon.attribute.flow.AttributePath
 import com.sphereon.identity.reconciliation.model.KnownHolderState
 import com.sphereon.identity.reconciliation.model.ReconciliationSelectorInput
 import com.sphereon.openid.oid4vp.auth.model.Oid4vpAuthSession

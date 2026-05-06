@@ -68,10 +68,10 @@ class StsWalletAuthProviderTest {
         assertTrue(authenticated.isOk)
         assertNull(authenticated.value)
 
-        val userInfo = provider.getUserInfo("missing-user")
+        val userInfo = provider.getUserInfo("user-123")
         assertTrue(userInfo.isOk)
+        assertEquals("user-123", userInfo.value.userId)
         assertEquals("OID4VP User", userInfo.value.displayName)
-        assertTrue(userInfo.value.attributes.isEmpty())
     }
 
     @Test

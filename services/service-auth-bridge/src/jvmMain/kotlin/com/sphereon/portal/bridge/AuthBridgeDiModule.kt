@@ -36,7 +36,7 @@ import com.sphereon.openid.oid4vp.auth.impl.config.Oid4vpAuthBridgeConfigBinder
 import com.sphereon.portal.bridge.db.AuthBridgeDatabase
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -242,6 +242,30 @@ interface AuthBridgeAppModule {
     fun provideExternalApiProjectionConfigProvider(
         appConfigService: AppConfigService,
     ): ExternalApiProjectionConfigProvider = ExternalApiProjectionConfigBinder(appConfigService)
+
+    /**
+     * Build the [com.sphereon.oauth2.jwt.validation.JwtValidationConfig] consumed by IDK's
+     * `DefaultIdpRegistry` (AppScope) from `external-api.jwt.*` configuration. The default
+     * IdP is the JWT issuer used to authenticate inbound external-API traffic.
+     */
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideJwtValidationConfig(
+        appConfigService: AppConfigService,
+    ): com.sphereon.oauth2.jwt.validation.JwtValidationConfig {
+        val issuer = appConfigService.getPropertyAsString("external-api.jwt.issuer")
+        val jwksUri = appConfigService.getPropertyAsString("external-api.jwt.jwks-uri")
+        val idp = if (issuer != null) {
+            com.sphereon.oauth2.jwt.validation.IdpConfig(
+                id = "external-api",
+                issuer = issuer,
+                jwksUri = jwksUri,
+            )
+        } else null
+        return com.sphereon.oauth2.jwt.validation.JwtValidationConfig(
+            defaultIdp = idp,
+        )
+    }
 }
 
 @ContributesTo(SessionScope::class, replaces = [Oid4vpAuthBridgeConfigBinder::class, ReconciliationCryptoModule::class])
@@ -321,25 +345,6 @@ interface AuthBridgeSessionModule {
         store = store,
         cryptoServiceProvider = { cryptoService },
     )
-
-    @Provides
-    @SingleIn(SessionScope::class)
-    fun provideJwtValidationConfig(
-        appConfigService: AppConfigService,
-    ): com.sphereon.oauth2.jwt.validation.JwtValidationConfig {
-        val issuer = appConfigService.getPropertyAsString("external-api.jwt.issuer")
-        val jwksUri = appConfigService.getPropertyAsString("external-api.jwt.jwks-uri")
-        val idp = if (issuer != null) {
-            com.sphereon.oauth2.jwt.validation.IdpConfig(
-                id = "external-api",
-                issuer = issuer,
-                jwksUri = jwksUri,
-            )
-        } else null
-        return com.sphereon.oauth2.jwt.validation.JwtValidationConfig(
-            defaultIdp = idp,
-        )
-    }
 
     @Provides
     @SingleIn(SessionScope::class)

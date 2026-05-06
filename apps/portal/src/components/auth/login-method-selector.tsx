@@ -14,6 +14,44 @@ interface FederationProvider {
   enabled: boolean
 }
 
+/**
+ * Map Auth.js v5 error codes (delivered as `?error=...` query params) to a
+ * user-facing message. Auth.js intentionally collapses many internal failures
+ * (token-fetch HTTP error, ID-token verification failure, JWKS fetch failure,
+ * issuer mismatch) to the single code `Configuration` — server-side detail
+ * lives only in the portal logs (see the `fetch-trace` shim and AUTH_DEBUG
+ * output). The fallback for unknown codes converts underscores to spaces so
+ * any future Auth.js codes still render readably.
+ *
+ * Codes covered (per https://errors.authjs.dev): Configuration, AccessDenied,
+ * Verification, OAuthSignin, OAuthCallback, OAuthAccountNotLinked,
+ * CallbackRouteError, SessionRequired.
+ */
+function describeAuthError(code: string, t: (key: string) => string): string {
+  switch (code) {
+    case 'Configuration':
+      return t('errorConfiguration')
+    case 'AccessDenied':
+      return t('errorAccessDenied')
+    case 'Verification':
+      return t('errorVerification')
+    case 'OAuthCallback':
+    case 'OAuthCallbackError':
+      return t('errorOAuthCallback')
+    case 'OAuthSignin':
+    case 'OAuthSigninError':
+      return t('errorOAuthSignin')
+    case 'OAuthAccountNotLinked':
+      return t('errorOAuthAccountNotLinked')
+    case 'CallbackRouteError':
+      return t('errorCallbackRouteError')
+    case 'SessionRequired':
+      return t('errorSessionRequired')
+    default:
+      return code.replace(/_/g, ' ')
+  }
+}
+
 export function LoginMethodSelector() {
   const t = useTranslations('login')
   const searchParams = useSearchParams()
@@ -74,11 +112,7 @@ export function LoginMethodSelector() {
   return (
     <div className={styles.container}>
       {error && (
-        <p className={styles.error}>
-          {error === 'Configuration'
-            ? t('stsUnavailable')
-            : error.replace(/_/g, ' ')}
-        </p>
+        <p className={styles.error}>{describeAuthError(error, t)}</p>
       )}
       {!stsAvailable && !error && (
         <p className={styles.error}>{t('stsUnavailable')}</p>

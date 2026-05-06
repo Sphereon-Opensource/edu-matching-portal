@@ -8,8 +8,9 @@ export async function GET() {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 3000)
 
+    // Server-side health probe — use the docker-internal URL.
     const res = await fetch(
-      `${env.STS_ISSUER_URL}/.well-known/openid-configuration`,
+      `${env.STS_INTERNAL_URL}/.well-known/openid-configuration`,
       { signal: controller.signal },
     )
     clearTimeout(timeout)

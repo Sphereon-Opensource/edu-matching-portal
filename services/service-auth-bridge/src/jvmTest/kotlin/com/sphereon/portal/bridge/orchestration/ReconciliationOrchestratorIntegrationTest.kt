@@ -5,7 +5,7 @@ import com.sphereon.core.api.Ok
 import com.sphereon.core.api.binary.typeToken
 import com.sphereon.core.api.error.IdkError
 import com.sphereon.core.api.http.HttpJson
-import com.sphereon.identity.idv.model.AttributeBag
+import com.sphereon.attribute.flow.AttributeBag
 import com.sphereon.identity.matching.crypto.EncryptedPayload
 import com.sphereon.openid.oid4vp.auth.config.Oid4vpAuthBridgeConfigProvider
 import com.sphereon.identity.matching.crypto.HashedIdentifier
@@ -52,7 +52,7 @@ import com.sphereon.openid.oid4vp.universal.VerifiedClaimsValue
 import com.sphereon.openid.oid4vp.universal.VerifiedData
 import com.sphereon.portal.bridge.WalletAttributeMappings
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
